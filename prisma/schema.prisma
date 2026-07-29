@@ -1,0 +1,86 @@
+// Foodie Meter backend data model
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  verificationCodes VerificationCode[]
+  calorieIntakes    CalorieIntake[]
+  recipes           Recipe[]
+
+  @@map("users")
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFY
+}
+
+model VerificationCode {
+  id         String              @id @default(uuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  purpose    VerificationPurpose @default(EMAIL_VERIFY)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime            @default(now())
+
+  @@index([userId, purpose])
+  @@map("verification_codes")
+}
+
+model CalorieIntake {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  calories  Int
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@map("calorie_intakes")
+}
+
+model NutritionistRecipe {
+  id           String   @id @default(uuid())
+  title        String
+  ingredients  String
+  instructions String
+  createdAt    DateTime @default(now())
+
+  copiedByRecipes Recipe[]
+
+  @@map("nutritionist_recipes")
+}
+
+model Recipe {
+  id                          String               @id @default(uuid())
+  userId                      String
+  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                       String
+  ingredients                 String
+  instructions                String
+  sourceNutritionistRecipeId  String?
+  sourceNutritionistRecipe    NutritionistRecipe?  @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+
+  @@index([userId])
+  @@map("recipes")
+}

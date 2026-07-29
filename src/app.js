@@ -1,0 +1,32 @@
+const express = require('express');
+const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./docs/swagger');
+const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
+
+const authRoutes = require('./modules/auth/auth.routes');
+const usersRoutes = require('./modules/users/users.routes');
+const calorieIntakeRoutes = require('./modules/calorieIntake/calorieIntake.routes');
+const recipesRoutes = require('./modules/recipes/recipes.routes');
+const nutritionistRecipesRoutes = require('./modules/nutritionistRecipes/nutritionistRecipes.routes');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api/docs.json', (req, res) => res.json(swaggerSpec));
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/calorie-intake', calorieIntakeRoutes);
+app.use('/api/recipes', recipesRoutes);
+app.use('/api/nutritionist-recipes', nutritionistRecipesRoutes);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+module.exports = app;
