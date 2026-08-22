@@ -9,17 +9,37 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  USER
+  NUTRITIONIST
+  ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  isVerified   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String           @id @default(uuid())
+  name             String
+  email            String           @unique
+  passwordHash     String
+  isVerified       Boolean          @default(false)
+  role             UserRole         @default(USER)
+  subscriptionTier SubscriptionTier @default(FREE)
+  status           AccountStatus    @default(ACTIVE)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   verificationCodes VerificationCode[]
   calorieIntakes    CalorieIntake[]
+  calorieGoal       CalorieGoal?
   recipes           Recipe[]
 
   @@map("users")
@@ -27,6 +47,7 @@ model User {
 
 enum VerificationPurpose {
   EMAIL_VERIFY
+  PASSWORD_RESET
 }
 
 model VerificationCode {
@@ -43,17 +64,39 @@ model VerificationCode {
   @@map("verification_codes")
 }
 
-model CalorieIntake {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      DateTime
-  calories  Int
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model CalorieGoal {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetCalories Int
+  effectiveDate  DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  @@index([userId, date])
+  @@map("calorie_goals")
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model CalorieIntake {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consumedAt DateTime
+  mealType   MealType
+  foodName   String
+  portion    String?
+  calories   Int
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, consumedAt])
   @@map("calorie_intakes")
 }
 

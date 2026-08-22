@@ -1,5 +1,6 @@
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
+const { ok, created } = require('../../utils/respond');
 
 async function assertOwnedRecipe(id, userId) {
   const recipe = await prisma.recipe.findUnique({ where: { id } });
@@ -14,7 +15,7 @@ async function create(req, res) {
   const recipe = await prisma.recipe.create({
     data: { userId: req.user.id, title, ingredients, instructions },
   });
-  res.status(201).json(recipe);
+  created(res, recipe);
 }
 
 async function list(req, res) {
@@ -22,12 +23,26 @@ async function list(req, res) {
     where: { userId: req.user.id },
     orderBy: { createdAt: 'desc' },
   });
-  res.json(recipes);
+  ok(res, recipes);
 }
 
 async function getById(req, res) {
   const recipe = await assertOwnedRecipe(req.params.id, req.user.id);
-  res.json(recipe);
+  ok(res, recipe);
+}
+
+async function update(req, res) {
+  await assertOwnedRecipe(req.params.id, req.user.id);
+  const { title, ingredients, instructions } = req.body;
+  const recipe = await prisma.recipe.update({
+    where: { id: req.params.id },
+    data: {
+      ...(title !== undefined ? { title } : {}),
+      ...(ingredients !== undefined ? { ingredients } : {}),
+      ...(instructions !== undefined ? { instructions } : {}),
+    },
+  });
+  ok(res, recipe);
 }
 
 async function remove(req, res) {
@@ -52,7 +67,7 @@ async function addFromNutritionistRecipe(req, res) {
     },
   });
 
-  res.status(201).json(recipe);
+  created(res, recipe);
 }
 
-module.exports = { create, list, getById, remove, addFromNutritionistRecipe };
+module.exports = { create, list, getById, update, remove, addFromNutritionistRecipe };

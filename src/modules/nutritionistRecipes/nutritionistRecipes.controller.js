@@ -1,9 +1,10 @@
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
+const { ok } = require('../../utils/respond');
 
 async function list(req, res) {
   const recipes = await prisma.nutritionistRecipe.findMany({ orderBy: { createdAt: 'desc' } });
-  res.json(recipes);
+  ok(res, recipes);
 }
 
 async function getById(req, res) {
@@ -11,7 +12,7 @@ async function getById(req, res) {
   if (!recipe) {
     throw new AppError(404, 'Nutritionist recipe not found');
   }
-  res.json(recipe);
+  ok(res, recipe);
 }
 
 module.exports = { list, getById };

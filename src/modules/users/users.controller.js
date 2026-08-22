@@ -1,8 +1,18 @@
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
+const { ok } = require('../../utils/respond');
 
 function toPublicUser(user) {
-  return { id: user.id, name: user.name, email: user.email, isVerified: user.isVerified, createdAt: user.createdAt };
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    isVerified: user.isVerified,
+    role: user.role,
+    subscriptionTier: user.subscriptionTier,
+    status: user.status,
+    createdAt: user.createdAt,
+  };
 }
 
 async function getMe(req, res) {
@@ -10,7 +20,7 @@ async function getMe(req, res) {
   if (!user) {
     throw new AppError(404, 'User not found');
   }
-  res.json(toPublicUser(user));
+  ok(res, toPublicUser(user));
 }
 
 async function updateMe(req, res) {
@@ -19,7 +29,7 @@ async function updateMe(req, res) {
     where: { id: req.user.id },
     data: { ...(name !== undefined ? { name } : {}) },
   });
-  res.json(toPublicUser(user));
+  ok(res, toPublicUser(user));
 }
 
 module.exports = { getMe, updateMe };

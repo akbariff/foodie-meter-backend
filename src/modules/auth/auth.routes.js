@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { body } = require('express-validator');
 const validate = require('../../middleware/validate');
 const asyncHandler = require('../../middleware/asyncHandler');
+const requireAuth = require('../../middleware/requireAuth');
 const controller = require('./auth.controller');
 
 const router = Router();
@@ -122,6 +123,95 @@ router.post(
   ],
   validate,
   asyncHandler(controller.login)
+);
+
+/**
+ * @openapi
+ * /api/auth/change-password:
+ *   put:
+ *     tags: [Auth]
+ *     summary: Change the logged-in user's password
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPassword, newPassword]
+ *             properties:
+ *               currentPassword: { type: string, format: password }
+ *               newPassword: { type: string, format: password, minLength: 8 }
+ *     responses:
+ *       200: { description: Password changed }
+ *       401: { description: Current password incorrect }
+ */
+router.put(
+  '/change-password',
+  requireAuth,
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+  ],
+  validate,
+  asyncHandler(controller.changePassword)
+);
+
+/**
+ * @openapi
+ * /api/auth/forgot-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request a password reset code by email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200: { description: Generic success message, regardless of whether the email exists }
+ */
+router.post(
+  '/forgot-password',
+  [body('email').isEmail().withMessage('A valid email is required').normalizeEmail()],
+  validate,
+  asyncHandler(controller.forgotPassword)
+);
+
+/**
+ * @openapi
+ * /api/auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset password using the emailed reset code
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, code, newPassword]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               code: { type: string, example: "123456" }
+ *               newPassword: { type: string, format: password, minLength: 8 }
+ *     responses:
+ *       200: { description: Password reset }
+ *       400: { description: Invalid or expired code }
+ */
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().withMessage('A valid email is required').normalizeEmail(),
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
+    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+  ],
+  validate,
+  asyncHandler(controller.resetPassword)
 );
 
 module.exports = router;

@@ -73,6 +73,43 @@ router.get('/:id', [param('id').isString()], validate, asyncHandler(controller.g
 /**
  * @openapi
  * /api/recipes/{id}:
+ *   put:
+ *     tags: [Recipes]
+ *     summary: Update a recipe the user owns
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               ingredients: { type: string }
+ *               instructions: { type: string }
+ *     responses:
+ *       200: { description: Updated recipe }
+ *       404: { description: Not found }
+ */
+router.put(
+  '/:id',
+  [
+    param('id').isString(),
+    body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
+    body('ingredients').optional().trim().notEmpty().withMessage('Ingredients cannot be empty'),
+    body('instructions').optional().trim().notEmpty().withMessage('Instructions cannot be empty'),
+  ],
+  validate,
+  asyncHandler(controller.update)
+);
+
+/**
+ * @openapi
+ * /api/recipes/{id}:
  *   delete:
  *     tags: [Recipes]
  *     summary: Delete a recipe (backs the delete-confirmation pop-up)

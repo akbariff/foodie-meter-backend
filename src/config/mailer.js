@@ -37,20 +37,28 @@ async function getTransporter() {
   return transporterPromise;
 }
 
-async function sendVerificationEmail(to, code) {
+async function sendCodeEmail({ to, subject, label }, code) {
   const transporter = await getTransporter();
   const info = await transporter.sendMail({
     from: env.smtp.from || 'Foodie Meter <no-reply@foodiemeter.dev>',
     to,
-    subject: 'Your Foodie Meter verification code',
-    text: `Your verification code is ${code}. It expires in ${env.verificationCodeTtlMinutes} minutes.`,
-    html: `<p>Your verification code is <strong>${code}</strong>.</p><p>It expires in ${env.verificationCodeTtlMinutes} minutes.</p>`,
+    subject,
+    text: `Your ${label} code is ${code}. It expires in ${env.verificationCodeTtlMinutes} minutes.`,
+    html: `<p>Your ${label} code is <strong>${code}</strong>.</p><p>It expires in ${env.verificationCodeTtlMinutes} minutes.</p>`,
   });
 
   const previewUrl = nodemailer.getTestMessageUrl(info);
   if (previewUrl) {
-    console.log(`[mailer] Preview verification email: ${previewUrl}`);
+    console.log(`[mailer] Preview ${label} email: ${previewUrl}`);
   }
 }
 
-module.exports = { sendVerificationEmail };
+async function sendVerificationEmail(to, code) {
+  await sendCodeEmail({ to, subject: 'Your Foodie Meter verification code', label: 'verification' }, code);
+}
+
+async function sendPasswordResetEmail(to, code) {
+  await sendCodeEmail({ to, subject: 'Your Foodie Meter password reset code', label: 'password reset' }, code);
+}
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail };

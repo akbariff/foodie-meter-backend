@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const prisma = require('../../config/db');
 const env = require('../../config/env');
 const AppError = require('../../middleware/AppError');
-const { sendVerificationEmail } = require('../../config/mailer');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../../config/mailer');
 
 const SALT_ROUNDS = 10;
 
@@ -16,20 +16,41 @@ function issueToken(user) {
   return jwt.sign({ sub: user.id }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
 }
 
-async function createVerificationCode(userId) {
+function toPublicUser(user) {
+  return { id: user.id, name: user.name, email: user.email };
+}
+
+async function createVerificationCode(userId, purpose) {
   const code = generateCode();
   const codeHash = await bcrypt.hash(code, SALT_ROUNDS);
   const expiresAt = new Date(Date.now() + env.verificationCodeTtlMinutes * 60 * 1000);
 
   await prisma.verificationCode.create({
-    data: { userId, codeHash, expiresAt },
+    data: { userId, codeHash, expiresAt, purpose },
   });
 
   if (env.nodeEnv !== 'production') {
-    console.log(`[auth] Verification code for user ${userId}: ${code}`);
+    console.log(`[auth] ${purpose} code for user ${userId}: ${code}`);
   }
 
   return code;
+}
+
+async function findAndConsumeValidCode(userId, purpose, code) {
+  const candidates = await prisma.verificationCode.findMany({
+    where: { userId, purpose, consumedAt: null, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  for (const candidate of candidates) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await bcrypt.compare(code, candidate.codeHash)) {
+      await prisma.verificationCode.update({ where: { id: candidate.id }, data: { consumedAt: new Date() } });
+      return candidate;
+    }
+  }
+
+  return null;
 }
 
 async function signup({ name, email, password }) {
@@ -43,10 +64,10 @@ async function signup({ name, email, password }) {
     data: { name, email, passwordHash },
   });
 
-  const code = await createVerificationCode(user.id);
+  const code = await createVerificationCode(user.id, 'EMAIL_VERIFY');
   await sendVerificationEmail(user.email, code);
 
-  return { id: user.id, name: user.name, email: user.email };
+  return toPublicUser(user);
 }
 
 async function resendVerification(email) {
@@ -58,7 +79,7 @@ async function resendVerification(email) {
     throw new AppError(409, 'This account is already verified');
   }
 
-  const code = await createVerificationCode(user.id);
+  const code = await createVerificationCode(user.id, 'EMAIL_VERIFY');
   await sendVerificationEmail(user.email, code);
 }
 
@@ -71,31 +92,14 @@ async function verifyEmail({ email, code }) {
     throw new AppError(409, 'This account is already verified');
   }
 
-  const candidates = await prisma.verificationCode.findMany({
-    where: { userId: user.id, purpose: 'EMAIL_VERIFY', consumedAt: null, expiresAt: { gt: new Date() } },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  let matched = null;
-  for (const candidate of candidates) {
-    // eslint-disable-next-line no-await-in-loop
-    if (await bcrypt.compare(code, candidate.codeHash)) {
-      matched = candidate;
-      break;
-    }
-  }
-
+  const matched = await findAndConsumeValidCode(user.id, 'EMAIL_VERIFY', code);
   if (!matched) {
     throw new AppError(400, 'Invalid or expired verification code');
   }
 
-  await prisma.$transaction([
-    prisma.verificationCode.update({ where: { id: matched.id }, data: { consumedAt: new Date() } }),
-    prisma.user.update({ where: { id: user.id }, data: { isVerified: true } }),
-  ]);
-
-  const token = issueToken(user);
-  return { token, user: { id: user.id, name: user.name, email: user.email } };
+  const updated = await prisma.user.update({ where: { id: user.id }, data: { isVerified: true } });
+  const token = issueToken(updated);
+  return { token, user: toPublicUser(updated) };
 }
 
 async function login({ email, password }) {
@@ -110,11 +114,62 @@ async function login({ email, password }) {
   }
 
   if (!user.isVerified) {
-    throw new AppError(403, 'Please verify your email before logging in');
+    throw new AppError(403, 'Please verify your email before logging in', 'EMAIL_NOT_VERIFIED');
+  }
+
+  if (user.status !== 'ACTIVE') {
+    throw new AppError(403, 'This account has been suspended', 'ACCOUNT_SUSPENDED');
   }
 
   const token = issueToken(user);
-  return { token, user: { id: user.id, name: user.name, email: user.email } };
+  return { token, user: toPublicUser(user) };
 }
 
-module.exports = { signup, resendVerification, verifyEmail, login };
+async function changePassword(userId, { currentPassword, newPassword }) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new AppError(404, 'User not found');
+  }
+
+  const currentMatches = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!currentMatches) {
+    throw new AppError(401, 'Current password is incorrect');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+}
+
+async function forgotPassword(email) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  // Always behave the same whether the account exists or not, to avoid leaking which emails are registered.
+  if (user) {
+    const code = await createVerificationCode(user.id, 'PASSWORD_RESET');
+    await sendPasswordResetEmail(user.email, code);
+  }
+}
+
+async function resetPassword({ email, code, newPassword }) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    throw new AppError(400, 'Invalid or expired reset code');
+  }
+
+  const matched = await findAndConsumeValidCode(user.id, 'PASSWORD_RESET', code);
+  if (!matched) {
+    throw new AppError(400, 'Invalid or expired reset code');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+}
+
+module.exports = {
+  signup,
+  resendVerification,
+  verifyEmail,
+  login,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+};
