@@ -36,6 +36,7 @@ async function requireAuth(req, res, next) {
       subscriptionTier: user.subscriptionTier,
       status: user.status,
       isVerified: user.isVerified,
+      assignedCategory: user.assignedCategory,
     };
     next();
   } catch (err) {

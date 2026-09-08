@@ -11,6 +11,7 @@ function toPublicUser(user) {
     role: user.role,
     subscriptionTier: user.subscriptionTier,
     status: user.status,
+    assignedCategory: user.assignedCategory,
     createdAt: user.createdAt,
   };
 }

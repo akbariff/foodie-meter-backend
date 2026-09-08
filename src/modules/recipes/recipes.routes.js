@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { body, param } = require('express-validator');
 const requireAuth = require('../../middleware/requireAuth');
+const { requireRole } = require('../../middleware/authorize');
 const validate = require('../../middleware/validate');
 const asyncHandler = require('../../middleware/asyncHandler');
 const controller = require('./recipes.controller');
@@ -51,6 +52,18 @@ router.post(
  *       200: { description: Array of recipes }
  */
 router.get('/', asyncHandler(controller.list));
+
+/**
+ * @openapi
+ * /api/recipes/flagged:
+ *   get:
+ *     tags: [Recipes]
+ *     summary: List all flagged user-submitted recipes across all users (Nutritionist/Admin moderation queue)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Array of flagged recipes with owner info }
+ */
+router.get('/flagged', requireRole('NUTRITIONIST', 'ADMIN'), asyncHandler(controller.listFlagged));
 
 /**
  * @openapi
@@ -147,6 +160,61 @@ router.post(
   [param('id').isString()],
   validate,
   asyncHandler(controller.addFromNutritionistRecipe)
+);
+
+/**
+ * @openapi
+ * /api/recipes/{id}/flag:
+ *   patch:
+ *     tags: [Recipes]
+ *     summary: Flag a user-submitted recipe for moderation (Nutritionist/Admin only; works across any user's recipes)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               flagReason: { type: string }
+ *     responses:
+ *       200: { description: Recipe flagged }
+ *       404: { description: Not found }
+ */
+router.patch(
+  '/:id/flag',
+  requireRole('NUTRITIONIST', 'ADMIN'),
+  [param('id').isString(), body('flagReason').optional().isString()],
+  validate,
+  asyncHandler(controller.flag)
+);
+
+/**
+ * @openapi
+ * /api/recipes/{id}/unflag:
+ *   patch:
+ *     tags: [Recipes]
+ *     summary: Clear a moderation flag on a recipe (Nutritionist/Admin only)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Flag cleared }
+ *       404: { description: Not found }
+ */
+router.patch(
+  '/:id/unflag',
+  requireRole('NUTRITIONIST', 'ADMIN'),
+  [param('id').isString()],
+  validate,
+  asyncHandler(controller.unflag)
 );
 
 module.exports = router;

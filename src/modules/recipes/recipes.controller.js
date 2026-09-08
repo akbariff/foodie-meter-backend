@@ -70,4 +70,48 @@ async function addFromNutritionistRecipe(req, res) {
   created(res, recipe);
 }
 
-module.exports = { create, list, getById, update, remove, addFromNutritionistRecipe };
+async function listFlagged(req, res) {
+  const recipes = await prisma.recipe.findMany({
+    where: { flagged: true },
+    orderBy: { flaggedAt: 'desc' },
+    include: { user: { select: { id: true, name: true, email: true } } },
+  });
+  ok(res, recipes);
+}
+
+async function flag(req, res) {
+  const { flagReason } = req.body;
+  const recipe = await prisma.recipe.findUnique({ where: { id: req.params.id } });
+  if (!recipe) {
+    throw new AppError(404, 'Recipe not found');
+  }
+  const updated = await prisma.recipe.update({
+    where: { id: req.params.id },
+    data: { flagged: true, flagReason, flaggedByUserId: req.user.id, flaggedAt: new Date() },
+  });
+  ok(res, updated);
+}
+
+async function unflag(req, res) {
+  const recipe = await prisma.recipe.findUnique({ where: { id: req.params.id } });
+  if (!recipe) {
+    throw new AppError(404, 'Recipe not found');
+  }
+  const updated = await prisma.recipe.update({
+    where: { id: req.params.id },
+    data: { flagged: false, flagReason: null, flaggedByUserId: null, flaggedAt: null },
+  });
+  ok(res, updated);
+}
+
+module.exports = {
+  create,
+  list,
+  getById,
+  update,
+  remove,
+  addFromNutritionistRecipe,
+  listFlagged,
+  flag,
+  unflag,
+};

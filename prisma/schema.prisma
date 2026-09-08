@@ -34,13 +34,22 @@ model User {
   role             UserRole         @default(USER)
   subscriptionTier SubscriptionTier @default(FREE)
   status           AccountStatus    @default(ACTIVE)
+  // Only meaningful when role = NUTRITIONIST; the content category they're approved for.
+  assignedCategory String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  verificationCodes VerificationCode[]
-  calorieIntakes    CalorieIntake[]
-  calorieGoal       CalorieGoal?
-  recipes           Recipe[]
+  verificationCodes        VerificationCode[]
+  calorieIntakes           CalorieIntake[]
+  calorieGoal              CalorieGoal?
+  recipes                  Recipe[]                  @relation("RecipeOwner")
+  flaggedRecipes           Recipe[]                  @relation("RecipeFlaggedBy")
+  nutritionistRecipes      NutritionistRecipe[]      @relation("NutritionistRecipeAuthor")
+  reviews                  Review[]                  @relation("ReviewAuthor")
+  moderatedReviews         Review[]                  @relation("ReviewModeratedBy")
+  nutritionistApplications NutritionistApplication[] @relation("NutritionistApplicationApplicant")
+  reviewedApplications     NutritionistApplication[] @relation("NutritionistApplicationReviewer")
+  updatedSiteContent       SiteContent[]             @relation("SiteContentUpdatedBy")
 
   @@map("users")
 }
@@ -101,29 +110,100 @@ model CalorieIntake {
 }
 
 model NutritionistRecipe {
-  id           String   @id @default(uuid())
-  title        String
-  ingredients  String
-  instructions String
-  createdAt    DateTime @default(now())
+  id              String   @id @default(uuid())
+  title           String
+  ingredients     String
+  instructions    String
+  // Content category this recipe belongs to (matches a Nutritionist's assignedCategory).
+  category        String?
+  // Comma-separated tags, e.g. "low-cal,high-iron,allergen-safe".
+  tags            String?
+  // Null for the original seed-managed catalog; set for recipes created by an authenticated Nutritionist.
+  createdByUserId String?
+  createdByUser   User?    @relation("NutritionistRecipeAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   copiedByRecipes Recipe[]
 
+  @@index([category])
   @@map("nutritionist_recipes")
 }
 
 model Recipe {
-  id                          String               @id @default(uuid())
-  userId                      String
-  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title                       String
-  ingredients                 String
-  instructions                String
-  sourceNutritionistRecipeId  String?
-  sourceNutritionistRecipe    NutritionistRecipe?  @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
-  createdAt                   DateTime             @default(now())
-  updatedAt                   DateTime             @updatedAt
+  id                         String              @id @default(uuid())
+  userId                     String
+  user                       User                @relation("RecipeOwner", fields: [userId], references: [id], onDelete: Cascade)
+  title                      String
+  ingredients                String
+  instructions               String
+  sourceNutritionistRecipeId String?
+  sourceNutritionistRecipe   NutritionistRecipe? @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
+  // Set by a Nutritionist/Admin moderating user-submitted recipes.
+  flagged                    Boolean             @default(false)
+  flagReason                 String?
+  flaggedByUserId            String?
+  flaggedByUser              User?               @relation("RecipeFlaggedBy", fields: [flaggedByUserId], references: [id], onDelete: SetNull)
+  flaggedAt                  DateTime?
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
 
   @@index([userId])
+  @@index([flagged])
   @@map("recipes")
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  REJECTED
+}
+
+model Review {
+  id                String       @id @default(uuid())
+  userId            String
+  user              User         @relation("ReviewAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  rating            Int
+  comment           String
+  status            ReviewStatus @default(PUBLISHED)
+  moderatedByUserId String?
+  moderatedByUser   User?        @relation("ReviewModeratedBy", fields: [moderatedByUserId], references: [id], onDelete: SetNull)
+  moderatedAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([status])
+  @@map("reviews")
+}
+
+enum NutritionistApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model NutritionistApplication {
+  id               String                        @id @default(uuid())
+  userId           String
+  user             User                          @relation("NutritionistApplicationApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  category         String
+  message          String?
+  status           NutritionistApplicationStatus @default(PENDING)
+  reviewedByUserId String?
+  reviewedByUser   User?                         @relation("NutritionistApplicationReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime?
+  createdAt        DateTime                      @default(now())
+
+  @@index([userId, status])
+  @@map("nutritionist_applications")
+}
+
+model SiteContent {
+  id              String   @id @default(uuid())
+  key             String   @unique
+  value           String
+  updatedByUserId String?
+  updatedByUser   User?    @relation("SiteContentUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_content")
 }
