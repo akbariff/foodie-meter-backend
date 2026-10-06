@@ -1,0 +1,7 @@
+import React, { useState } from 'react';
+import { Alert, ScrollView } from 'react-native';
+import { Button, Field, ScreenTitle, uiStyles } from '../components/UI';
+import { useApp } from '../context/AppContext';
+
+export function GoalScreen(){const {goal,setGoal}=useApp(); const [form,setForm]=useState({...goal}); const num=(v:string)=>Number(v.replace(/[^0-9.]/g,''))||0;
+return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent} keyboardShouldPersistTaps="handled"><ScreenTitle title="Set your goal" subtitle="Personalized calorie and macro targets" back/><Field label="Goal type" value={form.goalType} onChangeText={v=>setForm({...form,goalType:(v as any)||'Maintain'})}/><Field label="Daily calorie target" keyboardType="numeric" value={String(form.calories)} onChangeText={v=>setForm({...form,calories:num(v)})}/><Field label="Protein target (g)" keyboardType="numeric" value={String(form.protein)} onChangeText={v=>setForm({...form,protein:num(v)})}/><Field label="Carbohydrate target (g)" keyboardType="numeric" value={String(form.carbs)} onChangeText={v=>setForm({...form,carbs:num(v)})}/><Field label="Fat target (g)" keyboardType="numeric" value={String(form.fat)} onChangeText={v=>setForm({...form,fat:num(v)})}/><Field label="Activity level" value={form.activity} onChangeText={v=>setForm({...form,activity:v})}/><Button title="Save targets" onPress={()=>{if(form.calories<500)return Alert.alert('Check target','Enter a valid calorie target.');setGoal(form);Alert.alert('Saved','Your targets have been updated.')}}/></ScrollView>}

@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "FoodieMeter",
+    "slug": "foodiemeter",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": { "package": "com.foodiemeter.app" },
+    "ios": { "bundleIdentifier": "com.foodiemeter.app" }
+  }
+}
