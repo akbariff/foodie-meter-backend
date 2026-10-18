@@ -11,6 +11,8 @@ function toPublicUser(user) {
     role: user.role,
     subscriptionTier: user.subscriptionTier,
     status: user.status,
+    dietaryPreference: user.dietaryPreference,
+    excludedIngredients: user.excludedIngredients,
     createdAt: user.createdAt,
   };
 }
@@ -24,10 +26,14 @@ async function getMe(req, res) {
 }
 
 async function updateMe(req, res) {
-  const { name } = req.body;
+  const { name, dietaryPreference, excludedIngredients } = req.body;
   const user = await prisma.user.update({
     where: { id: req.user.id },
-    data: { ...(name !== undefined ? { name } : {}) },
+    data: {
+      ...(name !== undefined ? { name } : {}),
+      ...(dietaryPreference !== undefined ? { dietaryPreference } : {}),
+      ...(excludedIngredients !== undefined ? { excludedIngredients: [...new Set(excludedIngredients)] } : {}),
+    },
   });
   ok(res, toPublicUser(user));
 }

@@ -4,6 +4,7 @@ const requireAuth = require('../../middleware/requireAuth');
 const validate = require('../../middleware/validate');
 const asyncHandler = require('../../middleware/asyncHandler');
 const controller = require('./users.controller');
+const { DIETARY_PREFERENCES, INGREDIENT_TAGS } = require('../aiMeals/constants');
 
 const router = Router();
 
@@ -33,13 +34,23 @@ router.get('/me', requireAuth, asyncHandler(controller.getMe));
  *             type: object
  *             properties:
  *               name: { type: string }
+ *               dietaryPreference: { type: string, enum: [ANY, VEGETARIAN, VEGAN] }
+ *               excludedIngredients:
+ *                 type: array
+ *                 items: { type: string, enum: [MILK, EGGS, FISH, SHELLFISH, TREE_NUTS, PEANUTS, WHEAT, SOY, SESAME] }
  *     responses:
  *       200: { description: Updated profile }
  */
 router.put(
   '/me',
   requireAuth,
-  [body('name').optional().trim().notEmpty().withMessage('Name cannot be empty')],
+  [
+    body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+    body('dietaryPreference').optional().isIn(DIETARY_PREFERENCES),
+    body('excludedIngredients').optional().isArray({ max: 9 }).custom(items =>
+      items.every(item => typeof item === 'string' && INGREDIENT_TAGS.includes(item))
+    ),
+  ],
   validate,
   asyncHandler(controller.updateMe)
 );

@@ -2,7 +2,7 @@ export type ScreenName =
   | 'Login' | 'Register' | 'VerifyEmail' | 'ForgotPassword'
   | 'Home' | 'Goal' | 'Recommendations' | 'RecipeDetails'
   | 'LogMeal' | 'Diary' | 'MyRecipes' | 'RecipeEditor'
-  | 'Profile' | 'Reviews' | 'Premium' | 'Insights' | 'ManageSubscription';
+  | 'Profile' | 'Reviews' | 'Premium' | 'Insights' | 'ManageSubscription' | 'AiMealReview';
 
 export type Goal = {
   goalType: 'Lose' | 'Maintain' | 'Gain';
@@ -35,6 +35,8 @@ export type Recipe = {
   instructions: string[];
   tags: string[];
   source?: string;
+  mealType?: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+  serving?: string;
   mine?: boolean;
 };
 

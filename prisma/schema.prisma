@@ -34,6 +34,8 @@ model User {
   role             UserRole         @default(USER)
   subscriptionTier SubscriptionTier @default(FREE)
   status           AccountStatus    @default(ACTIVE)
+  dietaryPreference String          @default("ANY")
+  excludedIngredients String[]      @default([])
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -41,6 +43,8 @@ model User {
   calorieIntakes    CalorieIntake[]
   calorieGoal       CalorieGoal?
   recipes           Recipe[]
+  aiGenerationJobs  AiGenerationJob[] @relation("JobCreator")
+  reviewedAiMeals   AiMeal[]          @relation("MealReviewer")
 
   @@map("users")
 }
@@ -126,4 +130,61 @@ model Recipe {
 
   @@index([userId])
   @@map("recipes")
+}
+
+enum AiJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum AiMealStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AiGenerationJob {
+  id          String      @id @default(uuid())
+  createdById String
+  createdBy   User        @relation("JobCreator", fields: [createdById], references: [id])
+  modelName   String
+  count       Int
+  status      AiJobStatus @default(PENDING)
+  error       String?
+  createdAt   DateTime    @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  meals       AiMeal[]
+
+  @@map("ai_generation_jobs")
+}
+
+model AiMeal {
+  id              String       @id @default(uuid())
+  jobId           String
+  job             AiGenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  title           String
+  ingredients     String
+  instructions    String
+  mealType        MealType
+  dietaryTags     String[]     @default([])
+  ingredientTags  String[]     @default([])
+  serving         String?
+  calories        Int?
+  protein         Int?
+  carbs           Int?
+  fat             Int?
+  nutritionSource String?
+  status          AiMealStatus @default(PENDING)
+  reviewNotes     String?
+  reviewedById    String?
+  reviewedBy      User?        @relation("MealReviewer", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status, mealType])
+  @@map("ai_meals")
 }

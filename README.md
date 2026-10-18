@@ -1,8 +1,6 @@
 # Foodie Meter — Backend API
 
-Backend for the Foodie Meter school project: auth (with email verification, password reset), roles/tiers, profile, daily calorie goal + meal-level diary logging, and a recipe system (user recipes + curated nutritionist recipes).
-
-This implements Phase 1 ("Must Have") of the team's Backend Alignment document (BC-01 to BC-10). Phase 2 (Nutritionist/Admin CRUD, subscriptions, reports) and Phase 3 (AI/advanced features) are intentionally not implemented yet.
+Backend for the Foodie Meter school project: auth, roles/tiers, profile, daily calorie goal and diary, recipes, and nutritionist-reviewed AI meal recommendations.
 
 ## Stack
 Node.js + Express, PostgreSQL (Supabase) + Prisma ORM, JWT auth, Nodemailer (Gmail App Password, with an automatic disposable-inbox fallback in dev), Swagger/OpenAPI docs, Jest + Supertest for integration tests.
@@ -59,11 +57,13 @@ Full request/response shapes for every endpoint are in Swagger UI (`/api/docs`) 
 | Calorie intake (diary) | `POST/GET /api/calorie-intake` (supports `?date=YYYY-MM-DD`), `GET /api/calorie-intake/summary?date=`, `GET/PUT/DELETE /api/calorie-intake/:id` |
 | Recipes | `POST/GET /api/recipes`, `GET/PUT/DELETE /api/recipes/:id`, `POST /api/recipes/from-nutritionist/:id` |
 | Nutritionist recipes | `GET /api/nutritionist-recipes`, `GET /api/nutritionist-recipes/:id` |
+| AI meal review | `POST/GET /api/ai-meals/jobs`, `GET /api/ai-meals/jobs/:id`, `GET /api/ai-meals`, `PATCH /api/ai-meals/:id`, `POST /api/ai-meals/:id/approve` and `/reject` (Nutritionist/Admin) |
+| Premium recommendations | `GET /api/recommendations?mealType=LUNCH&date=YYYY-MM-DD` |
 
 Diary entries are meal-level: `consumedAt`, `mealType` (`BREAKFAST`/`LUNCH`/`DINNER`/`SNACK`), `foodName`, `portion` (optional), `calories`, `notes` (optional).
 
 ## Roles, tiers, and authorization
-`User` now has `role` (`USER`/`NUTRITIONIST`/`ADMIN`, default `USER`), `subscriptionTier` (`FREE`/`PREMIUM`, default `FREE`), and `status` (`ACTIVE`/`SUSPENDED`, default `ACTIVE`). `src/middleware/authorize.js` exports `requireRole(...)`/`requireTier(...)` guards, ready for Phase 2's Nutritionist/Admin/Premium-only endpoints — no Phase 1 route uses them yet since there's nothing role-restricted in this phase.
+`User` has `role` (`USER`/`NUTRITIONIST`/`ADMIN`), `subscriptionTier` (`FREE`/`PREMIUM`), and `status` (`ACTIVE`/`SUSPENDED`). The AI review endpoints require the Nutritionist or Admin role; recommendations require Premium. These checks run on the server.
 
 `/api/auth/*` routes are rate-limited (20 requests / 15 min per IP) against brute-force/abuse.
 
@@ -83,11 +83,24 @@ tests/
 ```
 
 ## Database
-Hosted on Supabase Postgres (session pooler, `aws-0-ap-northeast-1.pooler.supabase.com:5432` — required for IPv4 connectivity; the direct `db.<ref>.supabase.co` host is IPv6-only). Migrations and seed data are already applied there — `npm run dev` connects straight to it, no local Postgres needed.
+The API needs a PostgreSQL connection string in your local `.env`. It can use Supabase or local PostgreSQL. Apply the new AI migration with `npm run prisma:migrate` before starting the updated backend.
 
-## Known limitations (by design, for this phase)
+## Known limitations
 - Changing/resetting a password does not revoke already-issued JWTs (no session/token-versioning system yet) — acceptable for the FYP scope, worth flagging if extended.
-- No Nutritionist/Admin CRUD, subscriptions, reports, or recommendations yet — Phase 2 per the team's alignment doc.
+- Subscription billing, reports, medical-diet recommendations, and most Nutritionist/Admin CRUD remain outside this phase.
+
+## AI meal recommendation demo
+
+The AI meal feature uses a local Ollama model to draft meal candidates. A verified nutritionist account must check ingredients, tags, serving size, calories, macros, and the nutrition source before approving a candidate. Only approved meals appear in Premium recommendations. The model does not determine trusted nutrition values. This feature is for general wellness, not medical diets or allergy-safety guarantees.
+
+1. Install [Ollama for Windows](https://docs.ollama.com/windows), then run `ollama pull gemma3:4b`. Keep Ollama running on the same PC as the Express API. The API uses `http://127.0.0.1:11434` by default; adjust `OLLAMA_URL` and `OLLAMA_MODEL` in `.env` only if needed.
+2. Configure `DATABASE_URL` and `JWT_SECRET` in `.env`, then run `npm install`, `npm run prisma:migrate`, and `npm run dev`. This migration adds AI meals, generation jobs, and dietary profile fields. Generation jobs interrupted by an API restart are marked failed and can be started again.
+3. For a local demo without email delivery, set unique `DEMO_PREMIUM_PASSWORD` and `DEMO_NUTRITIONIST_PASSWORD` values (at least 12 characters) in `.env`, then run `npm run demo:users`. This creates verified `premium@foodiemeter.local` and `nutritionist@foodiemeter.local` accounts. Existing accounts are left unchanged. Alternatively, register and verify accounts normally, then assign access with `npm run demo:access -- nutritionist@example.com nutritionist` and `npm run demo:access -- premium@example.com premium`. Both commands refuse to run with `NODE_ENV=production`.
+4. Log in as the nutritionist in Expo. Open **Profile → Review AI meals**, generate candidates, then verify and approve one. Log in as the Premium user, set a calorie goal and dietary preference, then open **Premium → AI meal recommendations**. Free accounts receive 403 from `/api/recommendations`.
+
+Generation is asynchronous: the nutritionist screen polls a persisted job. If Ollama is offline or returns invalid output, the job becomes `FAILED` and shows the reason. Recommendation requests do not call Ollama. Swagger documents the review and recommendation endpoints at `/api/docs`.
+
+The current Expo app still has mock-only areas outside auth, goals, diary, profile, and AI meal recommendations. Premium access is assigned to test accounts; there is no payment flow.
 
 ## Next steps (not done yet)
 - The **database** is live on Supabase, but the **Express server** itself still isn't deployed anywhere — Supabase only hosts Postgres, not this Node app. Deploy `src/` to a free host (Render, Railway, Fly.io) so your teammate can hit a real URL instead of your localhost. Needs your own account on whichever host you pick — connect this repo (push to GitHub first) and set the same env vars from `.env.example` (with the real Supabase `DATABASE_URL`).

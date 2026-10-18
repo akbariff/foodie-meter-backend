@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { colors } from '../theme';
 
 export function HomeScreen() {
-  const { user, goal, consumed, navigate, recommendations, water, setWater } = useApp();
+  const { user, goal, hasCalorieGoal, consumed, navigate, water, setWater } = useApp();
   const remaining = Math.max(goal.calories - consumed, 0);
   const progress = Math.min(consumed / goal.calories, 1);
 
@@ -22,10 +22,11 @@ export function HomeScreen() {
         subtitle={user?.premium ? 'Premium dashboard' : 'Free dashboard'}
       />
 
-      <Text style={styles.section}>Daily calorie & macro target</Text>
-      <Text style={styles.big}>{consumed.toLocaleString()} / {goal.calories.toLocaleString()} kcal</Text>
+      <Text style={styles.section}>Daily calorie target</Text>
+      {hasCalorieGoal ? <><Text style={styles.big}>{consumed.toLocaleString()} / {goal.calories.toLocaleString()} kcal</Text>
       <View style={styles.track}><View style={[styles.fill, { width: `${progress * 100}%` }]} /></View>
-      <Text style={uiStyles.muted}>{remaining} kcal remaining today</Text>
+      <Text style={uiStyles.muted}>{remaining} kcal remaining today</Text></> :
+      <Pressable onPress={() => navigate('Goal')}><Text style={uiStyles.body}>Set a calorie goal to see your daily progress and meal recommendations.</Text></Pressable>}
 
       <View style={styles.quickRow}>
         {[
@@ -55,10 +56,10 @@ export function HomeScreen() {
       </View>
 
       <Card>
-        <Text style={styles.section}>Next recommendation</Text>
-        <Pressable onPress={() => navigate('RecipeDetails', { recipe: recommendations[0] })}>
-          <Text style={styles.meal}>{recommendations[0].title}</Text>
-          <Text style={uiStyles.muted}>{recommendations[0].calories} kcal • {recommendations[0].source}</Text>
+        <Text style={styles.section}>Meal recommendations</Text>
+        <Pressable onPress={() => navigate('Recommendations')}>
+          <Text style={styles.meal}>View reviewed meal ideas</Text>
+          <Text style={uiStyles.muted}>Matched to your calorie goal and dietary preference</Text>
         </Pressable>
       </Card>
 

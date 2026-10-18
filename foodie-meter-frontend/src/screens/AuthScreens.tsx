@@ -3,6 +3,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { Button, Field, ScreenTitle, uiStyles } from '../components/UI';
 import { useApp } from '../context/AppContext';
 import { colors } from '../theme';
+import { api } from '../services/api';
 
 function BrandBlock({ compact = false }: { compact?: boolean }) {
   return (
@@ -18,10 +19,14 @@ function BrandBlock({ compact = false }: { compact?: boolean }) {
 
 export function LoginScreen() {
   const { login, navigate } = useApp();
-  const [email, setEmail] = useState('premium@foodiemeter.local');
-  const [password, setPassword] = useState('password');
-  const submit = () => {
-    if (!login(email, password)) Alert.alert('Missing details', 'Enter your email and password.');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (!email.trim() || !password) return Alert.alert('Missing details', 'Enter your email and password.');
+    setBusy(true);
+    try { await login(email, password); } catch (error) { Alert.alert('Login failed', String((error as Error).message)); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -30,8 +35,7 @@ export function LoginScreen() {
       <ScreenTitle title="Welcome back" subtitle="Access your FoodieMeter experience." />
       <Field label="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
       <Field label="Password" secureTextEntry value={password} onChangeText={setPassword} />
-      <View style={styles.pill}><Text style={styles.pillText}>✦ Use premium@... for Premium demo</Text></View>
-      <Button title="Log in" onPress={submit} />
+      <Button title={busy ? 'Logging in...' : 'Log in'} disabled={busy} onPress={submit} />
       <Pressable onPress={() => navigate('ForgotPassword')}><Text style={styles.link}>Forgot password?</Text></Pressable>
       <View style={{ height: 18 }} />
       <Button title="Create an account" secondary onPress={() => navigate('Register')} />
@@ -45,9 +49,10 @@ export function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const submit = () => {
+  const submit = async () => {
     if (!name || !email || !password) return Alert.alert('Complete the form', 'Name, email and password are required.');
-    navigate('VerifyEmail', { email });
+    try { await api.register({ name, email, password }); navigate('VerifyEmail', { email }); }
+    catch (error) { Alert.alert('Registration failed', String((error as Error).message)); }
   };
 
   return (
@@ -57,7 +62,6 @@ export function RegisterScreen() {
       <Field label="Name" value={name} onChangeText={setName} />
       <Field label="Email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
       <Field label="Password" secureTextEntry value={password} onChangeText={setPassword} />
-      <Field label="Dietary preference (optional)" placeholder="e.g. No preference, Vegetarian" />
       <Button title="Create account" onPress={submit} />
     </ScrollView>
   );
@@ -65,11 +69,12 @@ export function RegisterScreen() {
 
 export function VerifyEmailScreen() {
   const { navigate, params } = useApp();
-  const [code, setCode] = useState('123456');
+  const [code, setCode] = useState('');
 
-  const submit = () => {
+  const submit = async () => {
     if (code.length !== 6) return Alert.alert('Invalid code', 'Enter the 6-digit code.');
-    Alert.alert('Email verified', 'Your account is ready.', [{ text: 'Continue', onPress: () => navigate('Login') }]);
+    try { await api.verifyEmail(params?.email, code); Alert.alert('Email verified', 'Log in to continue.', [{ text: 'Continue', onPress: () => navigate('Login') }]); }
+    catch (error) { Alert.alert('Verification failed', String((error as Error).message)); }
   };
 
   return (
@@ -78,7 +83,6 @@ export function VerifyEmailScreen() {
       <ScreenTitle title="Verify your email" subtitle={`We sent a 6-digit code to ${params?.email || 'your email'}.`} back />
       <Field label="Verification code" keyboardType="number-pad" maxLength={6} value={code} onChangeText={setCode} />
       <Button title="Verify email" onPress={submit} />
-      <Text style={uiStyles.muted}>Demo code: 123456</Text>
     </ScrollView>
   );
 }
@@ -86,19 +90,30 @@ export function VerifyEmailScreen() {
 export function ForgotPasswordScreen() {
   const { navigate } = useApp();
   const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   return (
     <ScrollView style={uiStyles.screen} contentContainerStyle={styles.authWrap}>
       <BrandBlock compact />
       <ScreenTitle title="Reset password" subtitle="Enter your registered email address." back />
       <Field label="Email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-      <Button
+      {!sent ? <Button
         title="Send reset code"
-        onPress={() => {
+        onPress={async () => {
           if (!email) return Alert.alert('Email required');
-          Alert.alert('Reset code sent', 'Demo mode: use 123456.', [{ text: 'OK', onPress: () => navigate('Login') }]);
+          try { await api.forgotPassword(email); setSent(true); Alert.alert('Reset code requested', 'Check your email or the backend console in development.'); }
+          catch (error) { Alert.alert('Request failed', String((error as Error).message)); }
         }}
-      />
+      /> : <>
+        <Field label="Reset code" keyboardType="number-pad" value={code} onChangeText={setCode}/>
+        <Field label="New password" secureTextEntry value={newPassword} onChangeText={setNewPassword}/>
+        <Button title="Reset password" onPress={async()=>{
+          try { await api.resetPassword(email,code,newPassword); Alert.alert('Password changed','Log in with your new password.',[{text:'Continue',onPress:()=>navigate('Login')}]); }
+          catch(error){ Alert.alert('Reset failed',String((error as Error).message)); }
+        }}/>
+      </>}
     </ScrollView>
   );
 }

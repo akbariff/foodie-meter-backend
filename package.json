@@ -13,6 +13,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "node prisma/seed.js",
+    "demo:access": "node scripts/set-demo-access.js",
+    "demo:users": "node scripts/create-demo-users.js",
     "test": "jest --runInBand"
   },
   "engines": {

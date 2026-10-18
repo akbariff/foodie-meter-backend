@@ -3,11 +3,35 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Field, ScreenTitle, uiStyles } from '../components/UI';
 import { useApp } from '../context/AppContext';
 import { colors } from '../theme';
+import { DietaryPreference } from '../services/api';
 
-export function ProfileScreen(){const {user,updateProfile,logout,navigate}=useApp(); const [name,setName]=useState(user?.name||''); const [email,setEmail]=useState(user?.email||''); const [diet,setDiet]=useState(user?.dietaryPreference||''); return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Profile" subtitle={user?.premium?'Premium account':'Free account'}/><Field label="Name" value={name} onChangeText={setName}/><Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none"/><Field label="Dietary preference" value={diet} onChangeText={setDiet}/><Button title="Save profile" onPress={()=>{updateProfile({name,email,dietaryPreference:diet});Alert.alert('Saved','Profile updated.')}}/><Button title="Change password" secondary onPress={()=>Alert.alert('Change password','Connect this button to your backend change-password endpoint.')}/><Button title="My recipes" secondary onPress={()=>navigate('MyRecipes')}/><Button title="Recipe reviews" secondary onPress={()=>navigate('Reviews')}/><Button title="Set calorie goal" secondary onPress={()=>navigate('Goal')}/><Button title="Log out" danger onPress={logout}/></ScrollView>}
+const EXCLUSIONS = ['MILK','EGGS','FISH','SHELLFISH','TREE_NUTS','PEANUTS','WHEAT','SOY','SESAME'];
+export function ProfileScreen(){
+ const {user,updateProfile,logout,navigate}=useApp();
+ const [name,setName]=useState(user?.name||'');
+ const [diet,setDiet]=useState<DietaryPreference>(user?.dietaryPreference||'ANY');
+ const [excluded,setExcluded]=useState<string[]>(user?.excludedIngredients||[]);
+ const toggle=(tag:string)=>setExcluded(v=>v.includes(tag)?v.filter(x=>x!==tag):[...v,tag]);
+ return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}>
+   <ScreenTitle title="Profile" subtitle={user?.role==='NUTRITIONIST'?'Nutritionist':user?.premium?'Premium account':'Free account'}/>
+   <Field label="Name" value={name} onChangeText={setName}/>
+   <Field label="Email" value={user?.email||''} editable={false}/>
+   <Text style={uiStyles.h2}>Dietary preference</Text>
+   {(['ANY','VEGETARIAN','VEGAN'] as DietaryPreference[]).map(value=><Button key={value} title={`${diet===value?'✓ ':''}${value}`} secondary onPress={()=>setDiet(value)}/>)}
+   <Text style={uiStyles.h2}>Ingredients to exclude</Text>
+   {EXCLUSIONS.map(tag=><Button key={tag} title={`${excluded.includes(tag)?'✓ ':''}${tag.replace('_',' ')}`} secondary onPress={()=>toggle(tag)}/>)}
+   <Text style={uiStyles.muted}>Always check ingredients and preparation for food allergies; these filters cannot guarantee safety.</Text>
+   <Button title="Save profile" onPress={async()=>{try{await updateProfile({name,dietaryPreference:diet,excludedIngredients:excluded});Alert.alert('Saved','Profile updated.')}catch(error){Alert.alert('Save failed',String((error as Error).message))}}}/>
+   {(user?.role==='NUTRITIONIST'||user?.role==='ADMIN')&&<Button title="Review AI meals" onPress={()=>navigate('AiMealReview')}/>}
+   <Button title="Set calorie goal" secondary onPress={()=>navigate('Goal')}/>
+   <Button title="My recipes" secondary onPress={()=>navigate('MyRecipes')}/>
+   <Button title="Recipe reviews" secondary onPress={()=>navigate('Reviews')}/>
+   <Button title="Log out" danger onPress={logout}/>
+ </ScrollView>;
+}
 
-export function PremiumScreen(){const {user,upgradePremium,navigate}=useApp(); if(user?.premium)return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Premium" subtitle="Your Premium membership is active"/><Card><Text style={styles.active}>✦ Active Premium subscription</Text><Text style={uiStyles.body}>AI meal recommendations, monthly reporting, advanced insights and Premium tools are unlocked.</Text></Card><Button title="AI meal recommendations" onPress={()=>navigate('Recommendations')}/><Button title="Progress & insights" secondary onPress={()=>navigate('Insights')}/><Button title="Manage subscription" secondary onPress={()=>navigate('ManageSubscription')}/></ScrollView>;
-return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Upgrade to Premium" subtitle="Unlock FoodieMeter’s advanced features"/><Card><Text style={styles.price}>$6.99 / month</Text><Text style={uiStyles.body}>✓ Personalized AI meal recommendations{`\n`}✓ Monthly calorie reports{`\n`}✓ Predictive progress insights{`\n`}✓ Image-assisted meal logging{`\n`}✓ Gamification & social features</Text></Card><Button title="Upgrade to Premium" onPress={upgradePremium}/><Text style={uiStyles.muted}>Demo only. Replace this action with your payment/subscription backend.</Text></ScrollView>}
+export function PremiumScreen(){const {user,upgradePremium,navigate}=useApp(); if(user?.premium)return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Premium" subtitle="Premium test access is active"/><Card><Text style={styles.active}>✦ Premium test account</Text><Text style={uiStyles.body}>Nutritionist-reviewed AI meal recommendations are available.</Text></Card><Button title="AI meal recommendations" onPress={()=>navigate('Recommendations')}/><Button title="Progress & insights" secondary onPress={()=>navigate('Insights')}/></ScrollView>;
+return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Premium" subtitle="AI meal recommendations for Premium test accounts"/><Card><Text style={uiStyles.body}>This FYP version has no payment flow. An admin can assign Premium access to a verified test account.</Text></Card><Button title="How to get demo access" onPress={upgradePremium}/></ScrollView>}
 
 export function InsightsScreen(){const {consumed,goal,diary}=useApp(); const protein=diary.reduce((s,x)=>s+(x.protein||0),0); return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Progress & insights" subtitle="A lightweight demo of your Premium analytics" back/><Card><Text style={styles.metric}>{Math.round((consumed/goal.calories)*100)}%</Text><Text style={uiStyles.muted}>of today’s calorie target consumed</Text></Card><Card><Text style={styles.metric}>{protein} g</Text><Text style={uiStyles.muted}>protein logged today • target {goal.protein} g</Text></Card><Card><Text style={styles.active}>Personalized nudge</Text><Text style={uiStyles.body}>{protein<goal.protein?'You are below your protein target. Consider a high-protein dinner.':'Protein intake is on track today.'}</Text></Card></ScrollView>}
 

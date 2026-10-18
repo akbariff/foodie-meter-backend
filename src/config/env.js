@@ -9,7 +9,7 @@ function required(name) {
 }
 
 module.exports = {
-  port: process.env.PORT || 4000,
+  port: process.env.PORT || 4477,
   nodeEnv: process.env.NODE_ENV || 'development',
   databaseUrl: required('DATABASE_URL'),
   jwtSecret: process.env.NODE_ENV === 'test' ? 'test-secret' : required('JWT_SECRET'),

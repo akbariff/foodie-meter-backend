@@ -1,21 +1,21 @@
 # FoodieMeter React Native Frontend
 
-A functional Expo + React Native prototype based on the FoodieMeter wireframe style: white background, sage-green controls, compact cards, large grey headings, and a five-item bottom navigation.
+A functional Expo + React Native prototype. Auth, profile, calorie goal, diary, AI recommendations, and nutritionist review use the Express backend. Other screens still contain local demo data.
 
 ## Included functional flows
-- Login / logout (demo mode)
+- Login / logout through the backend
 - Registration + email verification screen
 - Forgot password screen
 - Dashboard with daily calorie progress, water counter and quick actions
 - Set calorie + macro goals
-- Rule-based / Premium recommendations
+- Nutritionist-reviewed Premium AI meal recommendations
 - Recipe detail + log meal
 - Manual meal logging
 - Food diary + daily total + remove entry
 - Personal recipes: Create / Read / Update / Delete / Share
 - Profile editing
 - Reviews: Create / Read / Update / Delete
-- Free → Premium demo upgrade
+- Manually assigned Premium test access
 - Premium insights screen
 
 ## 1. VS Code setup
@@ -35,14 +35,11 @@ Then:
 - scan the QR code using Expo Go.
 
 ## 3. Demo accounts
-The current package runs with local mock state so you can test every UI immediately.
-
-- Free demo: `free@foodiemeter.local` / any non-empty password
-- Premium demo: `premium@foodiemeter.local` / any non-empty password
-
-Any email containing the word `premium` opens the Premium version.
+Use the root README's `demo:users` command to create verified local Premium and nutritionist accounts, or register and verify accounts before assigning test access with `demo:access`. An email containing `premium` does not grant Premium access. Some unrelated screens still use local demo data.
 
 ## 4. Connect your Express backend
+
+Login, profile, calorie goal, diary, AI meal recommendations, and nutritionist review now call the Express backend. Run its AI migration and set up demo accounts as described in the root README. A local model is needed only when generating new candidates; approved recommendations can be viewed while Ollama is offline.
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
@@ -54,28 +51,16 @@ Copy-Item .env.example .env
 
 Android emulator example:
 ```env
-EXPO_PUBLIC_API_URL=http://10.0.2.2:3000/api
+EXPO_PUBLIC_API_URL=http://10.0.2.2:4477/api
 ```
 
 Physical Android phone example:
 ```env
-EXPO_PUBLIC_API_URL=http://192.168.1.50:3000/api
+EXPO_PUBLIC_API_URL=http://192.168.1.50:4477/api
 ```
 Use your PC's actual LAN IP and make sure the Express server listens on an accessible interface.
 
-`src/services/api.ts` contains a ready API client. **The endpoint paths are placeholders** because your exact GitHub backend routes were not available when this frontend package was generated. Match them to your Swagger documentation, then replace the mock actions in `AppContext.tsx` with those API calls.
-
-## 5. Suggested backend integration order
-1. Login + JWT
-2. Register + verify email
-3. Profile
-4. Calorie goal
-5. Meal logging / diary
-6. Recipe CRUD
-7. Reviews
-8. Premium subscription
-9. Recommendation / recipe API
-10. Advanced Premium features
+`src/services/api.ts` contains the connected API client. Other screens still contain demo data and should not be treated as backend-persisted features. Login tokens are kept in memory for this FYP demo, so restarting the app requires logging in again.
 
 ## Design notes
 The UI intentionally follows your wireframe direction rather than a generic Material UI look. The main palette is in `src/theme.ts`, so you can change the entire app appearance from one file.
