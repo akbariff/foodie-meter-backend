@@ -9,6 +9,10 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // CLI operations (migrate, studio, db push) need a direct/unpooled connection — Neon's pooled
+    // endpoint goes through PgBouncer in transaction mode, which migrations can fail against
+    // (prepared statement errors, SET not persisting). The running app uses the pooled DATABASE_URL
+    // directly via src/config/db.js, independent of this file.
+    url: process.env["DATABASE_URL_UNPOOLED"] || process.env["DATABASE_URL"],
   },
 });

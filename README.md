@@ -5,7 +5,7 @@ Backend for the Foodie Meter school project: auth (email verification, password 
 Implements Phase 1 (BC-01–BC-10) and Phase 2's concrete CRUD/role work (Reviews, Nutritionist content + moderation, Admin) from the team's Backend Alignment document. **Not implemented**: subscription/payment processing, AI-personalized recommendations, gamification/social, predictive analytics, and image-recognition meal logging — these need product decisions (payment gateway, AI approach) beyond what a backend amendment alone can settle.
 
 ## Stack
-Node.js + Express, PostgreSQL (Supabase) + Prisma ORM, JWT auth, Nodemailer (Gmail App Password, with an automatic disposable-inbox fallback in dev), Swagger/OpenAPI docs, Jest + Supertest for integration tests.
+Node.js + Express, PostgreSQL (Neon) + Prisma ORM, JWT auth, Nodemailer (Gmail App Password, with an automatic disposable-inbox fallback in dev), Swagger/OpenAPI docs, Jest + Supertest for integration tests.
 
 ## Setup
 
@@ -24,7 +24,7 @@ npm test                 # runs the integration test suite
 
 > Port defaults to `4477` (not the more common `3000`/`4000`) to avoid clashing with other local dev servers. Change `PORT` in `.env` if needed.
 >
-> **Database note:** the Supabase project used for this app auto-pauses after inactivity (free tier). If `prisma migrate`/the app can't connect, check the Supabase dashboard for a "paused" banner and resume it, or develop against local Postgres in the meantime (`DATABASE_URL="postgresql://<you>@localhost:5432/foodie_meter?schema=public"`, `npx prisma migrate dev`).
+> **Database note:** hosted on Neon. `DATABASE_URL` (pooled) is what the running app uses; `DATABASE_URL_UNPOOLED` (direct) is what Prisma CLI commands use for migrations, wired via `prisma.config.ts`. Both are pulled automatically by `neon deploy` — if they ever look stale or missing, run `neon deploy` again (needs `neon login` or `NEON_API_KEY` set first). Neon scales to zero when idle but auto-resumes on the next query (a brief cold start, no manual dashboard step) — unlike the project's original Supabase database, which required a manual resume and is no longer used (its connection string is kept, commented out, in `.env` for reference). Local Postgres remains a fallback for development (`DATABASE_URL="postgresql://<you>@localhost:5432/foodie_meter?schema=public"`, `npx prisma migrate dev`).
 
 ### Email
 If `SMTP_USER`/`SMTP_PASS` in `.env` are left as placeholders, the server automatically uses a disposable Ethereal test inbox in development — signup still works, and a preview link for the email is printed in the server console. The plaintext code is also logged (`[auth] EMAIL_VERIFY code for user ...` / `[auth] PASSWORD_RESET code for user ...`) so you can test the flow without checking any inbox.
@@ -99,7 +99,7 @@ tests/
 ```
 
 ## Database
-Hosted on Supabase Postgres (session pooler, `aws-0-ap-northeast-1.pooler.supabase.com:5432` — required for IPv4 connectivity; the direct `db.<ref>.supabase.co` host is IPv6-only). See the database-note above if it's paused. A standalone schema reference (ERD + field tables) is in `docs/DATABASE_SCHEMA.docx`.
+Hosted on Neon Postgres, linked via `neon.ts`/`.neon` (project `foodie-meter`, branch `production`). Two connection strings are pulled into `.env`: `DATABASE_URL` (pooled, via PgBouncer — what the app uses) and `DATABASE_URL_UNPOOLED` (direct — what Prisma CLI/migrations use, via `prisma.config.ts`). See the database note above for the pooled-vs-direct distinction and what to do if they go stale. A standalone schema reference (ERD + field tables) is in `docs/DATABASE_SCHEMA.docx`.
 
 ## Known limitations (by design)
 - Changing/resetting a password does not revoke already-issued JWTs (no session/token-versioning system) — acceptable for FYP scope, worth flagging if extended.
@@ -107,6 +107,6 @@ Hosted on Supabase Postgres (session pooler, `aws-0-ap-northeast-1.pooler.supaba
 - No subscription/payment processing, AI recommendations, gamification, predictive analytics, or image-recognition logging — all deferred, need product/technical decisions beyond a backend-only amendment.
 
 ## Next steps (not done yet)
-- The **database** is on Supabase, but the **Express server** itself still isn't deployed anywhere. Deploy `src/` to a free host (Render, Railway, Fly.io) — connect this repo and set the same env vars from `.env.example` (with the real Supabase `DATABASE_URL`).
+- The **database** is on Neon, but the **Express server** itself still isn't deployed anywhere. Deploy `src/` to a free host (Render, Railway, Fly.io) — connect this repo and set the same env vars from `.env.example` (with the real Neon `DATABASE_URL`).
 - Point `servers` in `src/docs/swagger.js` at the deployed URL once live.
 - Swap in the real product PRD — the file that arrived as `FYP-26-S3-35P_PRD.docx` turned out to be a different team's project (WiseWorkout App) and was not used for this amendment.
