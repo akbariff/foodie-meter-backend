@@ -29,14 +29,19 @@ async function upgrade(req, res) {
     orderBy: { createdAt: 'desc' },
   });
 
-  if (active && (!active.expiresAt || active.expiresAt > new Date())) {
+  const now = new Date();
+
+  if (active && (!active.expiresAt || active.expiresAt > now)) {
     throw new AppError(409, 'Premium subscription is already active');
   }
 
-  const now = new Date();
   const expiresAt = addDays(now, 30);
 
-  const [, subscription] = await prisma.$transaction([
+  const [, , subscription] = await prisma.$transaction([
+    prisma.subscription.updateMany({
+      where: { userId: req.user.id, status: 'ACTIVE' },
+      data: { status: 'EXPIRED', autoRenew: false },
+    }),
     prisma.user.update({
       where: { id: req.user.id },
       data: { subscriptionTier: 'PREMIUM' },
