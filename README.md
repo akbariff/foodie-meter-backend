@@ -52,10 +52,10 @@ Full request/response shapes for every endpoint are in Swagger UI (`/api/docs`) 
 | Area | Endpoints |
 |---|---|
 | Auth | `POST /api/auth/signup`, `verify-email`, `resend-verification`, `login`, `PUT change-password`, `POST forgot-password`, `POST reset-password` |
-| Profile | `GET/PUT /api/users/me` (includes `role`, `subscriptionTier`, `status`) |
+| Profile | `GET/PUT /api/users/me` (includes `role`, `subscriptionTier`, `status`, plus `UserProfile` health fields) |
 | Calorie goal | `GET/PUT /api/calorie-goal` |
 | Calorie intake (diary) | `POST/GET /api/calorie-intake` (supports `?date=YYYY-MM-DD`), `GET /api/calorie-intake/summary?date=`, `GET/PUT/DELETE /api/calorie-intake/:id` |
-| Recipes | `POST/GET /api/recipes`, `GET/PUT/DELETE /api/recipes/:id`, `POST /api/recipes/from-nutritionist/:id` |
+| Recipes | `POST/GET /api/recipes`, `GET/PUT/DELETE /api/recipes/:id`, `POST /api/recipes/from-nutritionist/:id` |\n| Recipe reviews | `GET/POST /api/recipes/:recipeId/reviews`, `PUT/DELETE /api/recipes/:recipeId/reviews/:reviewId` |\n| Subscriptions | `GET /api/subscriptions/me`, `POST /api/subscriptions/upgrade`, `/cancel`, `/renew` |
 | Nutritionist recipes | `GET /api/nutritionist-recipes`, `GET /api/nutritionist-recipes/:id` |
 | AI meal review | `POST/GET /api/ai-meals/jobs`, `GET /api/ai-meals/jobs/:id`, `GET /api/ai-meals`, `PATCH /api/ai-meals/:id`, `POST /api/ai-meals/:id/approve` and `/reject` (Nutritionist/Admin) |
 | Premium recommendations | `GET /api/recommendations?mealType=LUNCH&date=YYYY-MM-DD` |
@@ -87,7 +87,7 @@ The API needs a PostgreSQL connection string in your local `.env`. It can use Su
 
 ## Known limitations
 - Changing/resetting a password does not revoke already-issued JWTs (no session/token-versioning system yet) — acceptable for the FYP scope, worth flagging if extended.
-- Subscription billing, reports, medical-diet recommendations, and most Nutritionist/Admin CRUD remain outside this phase.
+- Real payment-provider billing is not integrated; the subscription endpoints provide a 30-day FYP/demo Premium lifecycle. Reports, medical-diet recommendations, and most Nutritionist/Admin CRUD remain outside this phase.
 
 ## AI meal recommendation demo
 
@@ -100,7 +100,7 @@ The AI meal feature uses a local Ollama model to draft meal candidates. A verifi
 
 Generation is asynchronous: the nutritionist screen polls a persisted job. If Ollama is offline or returns invalid output, the job becomes `FAILED` and shows the reason. Recommendation requests do not call Ollama. Swagger documents the review and recommendation endpoints at `/api/docs`.
 
-The current Expo app still has mock-only areas outside auth, goals, diary, profile, and AI meal recommendations. Premium access is assigned to test accounts; there is no payment flow.
+The current Expo app still has mock-only areas outside auth, goals, diary, profile, and AI meal recommendations. The backend now persists user health profiles, recipe reviews, and a demo Premium subscription lifecycle; there is still no real payment-provider flow.
 
 ## Next steps (not done yet)
 - The **database** is live on Supabase, but the **Express server** itself still isn't deployed anywhere — Supabase only hosts Postgres, not this Node app. Deploy `src/` to a free host (Render, Railway, Fly.io) so your teammate can hit a real URL instead of your localhost. Needs your own account on whichever host you pick — connect this repo (push to GitHub first) and set the same env vars from `.env.example` (with the real Supabase `DATABASE_URL`).
