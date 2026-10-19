@@ -20,33 +20,71 @@ enum SubscriptionTier {
   PREMIUM
 }
 
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
 enum AccountStatus {
   ACTIVE
   SUSPENDED
 }
 
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum WeightGoal {
+  LOSE
+  MAINTAIN
+  GAIN
+}
+
 model User {
-  id               String           @id @default(uuid())
-  name             String
-  email            String           @unique
-  passwordHash     String
-  isVerified       Boolean          @default(false)
-  role             UserRole         @default(USER)
-  subscriptionTier SubscriptionTier @default(FREE)
-  status           AccountStatus    @default(ACTIVE)
-  dietaryPreference String          @default("ANY")
-  excludedIngredients String[]      @default([])
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                  String           @id @default(uuid())
+  name                String
+  email               String           @unique
+  passwordHash        String
+  isVerified          Boolean          @default(false)
+  role                UserRole         @default(USER)
+  subscriptionTier    SubscriptionTier @default(FREE)
+  status              AccountStatus    @default(ACTIVE)
+  dietaryPreference   String           @default("ANY")
+  excludedIngredients String[]         @default([])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   verificationCodes VerificationCode[]
   calorieIntakes    CalorieIntake[]
   calorieGoal       CalorieGoal?
+  profile           UserProfile?
   recipes           Recipe[]
+  recipeReviews     RecipeReview[]
+  subscriptions     Subscription[]
   aiGenerationJobs  AiGenerationJob[] @relation("JobCreator")
   reviewedAiMeals   AiMeal[]          @relation("MealReviewer")
 
   @@map("users")
+}
+
+model UserProfile {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth   DateTime?
+  heightCm      Float?
+  weightKg      Float?
+  activityLevel ActivityLevel?
+  weightGoal    WeightGoal?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("user_profiles")
 }
 
 enum VerificationPurpose {
@@ -117,19 +155,52 @@ model NutritionistRecipe {
 }
 
 model Recipe {
-  id                          String               @id @default(uuid())
-  userId                      String
-  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title                       String
-  ingredients                 String
-  instructions                String
-  sourceNutritionistRecipeId  String?
-  sourceNutritionistRecipe    NutritionistRecipe?  @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
-  createdAt                   DateTime             @default(now())
-  updatedAt                   DateTime             @updatedAt
+  id                         String              @id @default(uuid())
+  userId                     String
+  user                       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                      String
+  ingredients                String
+  instructions               String
+  sourceNutritionistRecipeId String?
+  sourceNutritionistRecipe   NutritionistRecipe? @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
+  reviews                    RecipeReview[]
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
 
   @@index([userId])
   @@map("recipes")
+}
+
+model RecipeReview {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId  String
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, recipeId])
+  @@index([recipeId])
+  @@map("recipe_reviews")
+}
+
+model Subscription {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      SubscriptionStatus @default(ACTIVE)
+  startedAt   DateTime           @default(now())
+  expiresAt   DateTime?
+  cancelledAt DateTime?
+  autoRenew   Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@map("subscriptions")
 }
 
 enum AiJobStatus {
@@ -162,28 +233,28 @@ model AiGenerationJob {
 }
 
 model AiMeal {
-  id              String       @id @default(uuid())
+  id              String          @id @default(uuid())
   jobId           String
   job             AiGenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
   title           String
   ingredients     String
   instructions    String
   mealType        MealType
-  dietaryTags     String[]     @default([])
-  ingredientTags  String[]     @default([])
+  dietaryTags     String[]        @default([])
+  ingredientTags  String[]        @default([])
   serving         String?
   calories        Int?
   protein         Int?
   carbs           Int?
   fat             Int?
   nutritionSource String?
-  status          AiMealStatus @default(PENDING)
+  status          AiMealStatus    @default(PENDING)
   reviewNotes     String?
   reviewedById    String?
-  reviewedBy      User?        @relation("MealReviewer", fields: [reviewedById], references: [id])
+  reviewedBy      User?           @relation("MealReviewer", fields: [reviewedById], references: [id])
   reviewedAt      DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([status, mealType])
   @@map("ai_meals")
