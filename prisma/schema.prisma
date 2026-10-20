@@ -26,25 +26,25 @@ enum AccountStatus {
 }
 
 model User {
-  id               String           @id @default(uuid())
-  name             String
-  email            String           @unique
-  passwordHash     String
-  isVerified       Boolean          @default(false)
-  role             UserRole         @default(USER)
-  subscriptionTier SubscriptionTier @default(FREE)
-  status           AccountStatus    @default(ACTIVE)
-  dietaryPreference String          @default("ANY")
-  excludedIngredients String[]      @default([])
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                  String           @id @default(uuid())
+  name                String
+  email               String           @unique
+  passwordHash        String
+  isVerified          Boolean          @default(false)
+  role                UserRole         @default(USER)
+  subscriptionTier    SubscriptionTier @default(FREE)
+  status              AccountStatus    @default(ACTIVE)
+  dietaryPreference   String           @default("ANY")
+  excludedIngredients String[]         @default([])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   verificationCodes VerificationCode[]
   calorieIntakes    CalorieIntake[]
   calorieGoal       CalorieGoal?
   recipes           Recipe[]
-  aiGenerationJobs  AiGenerationJob[] @relation("JobCreator")
-  reviewedAiMeals   AiMeal[]          @relation("MealReviewer")
+  aiGenerationJobs  AiGenerationJob[]  @relation("JobCreator")
+  reviewedAiMeals   AiMeal[]           @relation("MealReviewer")
 
   @@map("users")
 }
@@ -117,16 +117,16 @@ model NutritionistRecipe {
 }
 
 model Recipe {
-  id                          String               @id @default(uuid())
-  userId                      String
-  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title                       String
-  ingredients                 String
-  instructions                String
-  sourceNutritionistRecipeId  String?
-  sourceNutritionistRecipe    NutritionistRecipe?  @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
-  createdAt                   DateTime             @default(now())
-  updatedAt                   DateTime             @updatedAt
+  id                         String              @id @default(uuid())
+  userId                     String
+  user                       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                      String
+  ingredients                String
+  instructions               String
+  sourceNutritionistRecipeId String?
+  sourceNutritionistRecipe   NutritionistRecipe? @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
 
   @@index([userId])
   @@map("recipes")
@@ -162,28 +162,28 @@ model AiGenerationJob {
 }
 
 model AiMeal {
-  id              String       @id @default(uuid())
+  id              String          @id @default(uuid())
   jobId           String
   job             AiGenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
   title           String
   ingredients     String
   instructions    String
   mealType        MealType
-  dietaryTags     String[]     @default([])
-  ingredientTags  String[]     @default([])
+  dietaryTags     String[]        @default([])
+  ingredientTags  String[]        @default([])
   serving         String?
   calories        Int?
   protein         Int?
   carbs           Int?
   fat             Int?
   nutritionSource String?
-  status          AiMealStatus @default(PENDING)
+  status          AiMealStatus    @default(PENDING)
   reviewNotes     String?
   reviewedById    String?
-  reviewedBy      User?        @relation("MealReviewer", fields: [reviewedById], references: [id])
+  reviewedBy      User?           @relation("MealReviewer", fields: [reviewedById], references: [id])
   reviewedAt      DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([status, mealType])
   @@map("ai_meals")
