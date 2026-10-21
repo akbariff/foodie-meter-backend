@@ -9,6 +9,26 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum WeightGoal {
+  LOSE
+  MAINTAIN
+  GAIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
 enum UserRole {
   USER
   NUTRITIONIST
@@ -45,6 +65,14 @@ model User {
   recipes           Recipe[]
   aiGenerationJobs  AiGenerationJob[]  @relation("JobCreator")
   reviewedAiMeals   AiMeal[]           @relation("MealReviewer")
+
+  reviewedNutritionistApplications NutritionistApplication[] @relation("NutritionistApplicationReviewer")
+  nutritionistCategories           NutritionistCategory[]
+  nutritionContents                NutritionContent[]
+  recipeModerations                RecipeModeration[]
+  userProfile                      UserProfile?
+  recipeReviews                    RecipeReview[]
+  subscriptions                    Subscription[]
 
   @@map("users")
 }
@@ -117,16 +145,20 @@ model NutritionistRecipe {
 }
 
 model Recipe {
-  id                         String              @id @default(uuid())
+  id                         String                 @id @default(uuid())
   userId                     String
-  user                       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   title                      String
   ingredients                String
   instructions               String
   sourceNutritionistRecipeId String?
-  sourceNutritionistRecipe   NutritionistRecipe? @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
-  createdAt                  DateTime            @default(now())
-  updatedAt                  DateTime            @updatedAt
+  sourceNutritionistRecipe   NutritionistRecipe?    @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+  moderationStatus           RecipeModerationStatus @default(ACTIVE)
+  moderations                RecipeModeration[]
+
+  reviews RecipeReview[]
 
   @@index([userId])
   @@map("recipes")
@@ -187,4 +219,166 @@ model AiMeal {
 
   @@index([status, mealType])
   @@map("ai_meals")
+}
+
+model UserProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  dateOfBirth   DateTime?
+  heightCm      Float?
+  weightKg      Float?
+  activityLevel ActivityLevel?
+  weightGoal    WeightGoal?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model RecipeReview {
+  id       String @id @default(uuid())
+  userId   String
+  recipeId String
+  rating   Int
+  comment  String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, recipeId])
+  @@index([recipeId])
+  @@map("recipe_reviews")
+}
+
+model Subscription {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status      SubscriptionStatus @default(ACTIVE)
+  startedAt   DateTime           @default(now())
+  expiresAt   DateTime?
+  cancelledAt DateTime?
+  autoRenew   Boolean            @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@map("subscriptions")
+}
+
+enum NutritionistApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RecipeModerationStatus {
+  ACTIVE
+  FLAGGED
+  REMOVED
+}
+
+enum ModerationAction {
+  APPROVED
+  FLAGGED
+  REMOVED
+  CLEARED
+}
+
+model NutritionistApplication {
+  id             String  @id @default(uuid())
+  name           String
+  email          String
+  qualification  String
+  specialty      String
+  experience     String?
+  supportingInfo String?
+
+  status      NutritionistApplicationStatus @default(PENDING)
+  reviewNotes String?
+
+  reviewedById String?
+  reviewedBy   User?   @relation("NutritionistApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@map("nutritionist_applications")
+}
+
+model NutritionCategory {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  nutritionists NutritionistCategory[]
+  contents      NutritionContent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("nutrition_categories")
+}
+
+model NutritionistCategory {
+  nutritionistId String
+  categoryId     String
+
+  nutritionist User              @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
+  category     NutritionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@id([nutritionistId, categoryId])
+  @@map("nutritionist_categories")
+}
+
+model NutritionContent {
+  id String @id @default(uuid())
+
+  categoryId String
+  category   NutritionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  title   String
+  content String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@map("nutrition_contents")
+}
+
+model RecipeModeration {
+  id String @id @default(uuid())
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  reviewedById String
+  reviewedBy   User   @relation(fields: [reviewedById], references: [id], onDelete: Cascade)
+
+  action ModerationAction
+  reason String?
+
+  createdAt DateTime @default(now())
+
+  @@index([recipeId])
+  @@index([reviewedById])
+  @@map("recipe_moderations")
 }
