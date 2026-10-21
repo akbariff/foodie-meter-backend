@@ -12,9 +12,13 @@ export type AiMeal = {
   dietaryTags: string[]; ingredientTags: string[]; serving: string | null;
   calories: number | null; protein: number | null; carbs: number | null; fat: number | null;
   nutritionSource: string | null; status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reviewNotes: string | null;
+  reviewNotes: string | null; reviewedAt?: string | null;
 };
-export type GenerationJob = { id: string; status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'; error: string | null; meals: AiMeal[] };
+export type GenerationJob = {
+  id: string; count: number; createdAt: string;
+  status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+  error: string | null; meals?: AiMeal[];
+};
 export type RecommendationMeal = Omit<AiMeal, 'status' | 'reviewNotes'> & { reviewedAt: string };
 export type RecommendationData = { date: string; mealType: MealType; targetCalories: number; consumedCalories: number; remainingCalories: number; meals: RecommendationMeal[] };
 export type BackendDiaryEntry = { id: string; consumedAt: string; mealType: MealType; foodName: string; calories: number };
@@ -47,6 +51,7 @@ export const api = {
   logMeal: (payload: { consumedAt: string; mealType: MealType; foodName: string; portion?: string; calories: number }) => request<BackendDiaryEntry>('/calorie-intake', { method: 'POST', body: JSON.stringify(payload) }),
   deleteDiaryEntry: (id: string) => request<void>(`/calorie-intake/${id}`, { method: 'DELETE' }),
   startGeneration: (count: number) => request<GenerationJob>('/ai-meals/jobs', { method: 'POST', body: JSON.stringify({ count }) }),
+  getGenerationJobs: () => request<GenerationJob[]>('/ai-meals/jobs'),
   getGenerationJob: (id: string) => request<GenerationJob>(`/ai-meals/jobs/${id}`),
   getAiMeals: (status: AiMeal['status']) => request<AiMeal[]>(`/ai-meals?status=${status}`),
   updateAiMeal: (id: string, payload: Partial<AiMeal>) => request<AiMeal>(`/ai-meals/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),

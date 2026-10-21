@@ -57,13 +57,13 @@ Full request/response shapes for every endpoint are in Swagger UI (`/api/docs`) 
 | Calorie intake (diary) | `POST/GET /api/calorie-intake` (supports `?date=YYYY-MM-DD`), `GET /api/calorie-intake/summary?date=`, `GET/PUT/DELETE /api/calorie-intake/:id` |
 | Recipes | `POST/GET /api/recipes`, `GET/PUT/DELETE /api/recipes/:id`, `POST /api/recipes/from-nutritionist/:id` |
 | Nutritionist recipes | `GET /api/nutritionist-recipes`, `GET /api/nutritionist-recipes/:id` |
-| AI meal review | `POST/GET /api/ai-meals/jobs`, `GET /api/ai-meals/jobs/:id`, `GET /api/ai-meals`, `PATCH /api/ai-meals/:id`, `POST /api/ai-meals/:id/approve` and `/reject` (Nutritionist/Admin) |
+| AI meal generation and review | `POST/GET /api/ai-meals/jobs` (Premium/Nutritionist/Admin), `GET /api/ai-meals/jobs/:id` (owner or reviewer), `GET /api/ai-meals`, `PATCH /api/ai-meals/:id`, `POST /api/ai-meals/:id/approve` and `/reject` (Nutritionist/Admin) |
 | Premium recommendations | `GET /api/recommendations?mealType=LUNCH&date=YYYY-MM-DD` |
 
 Diary entries are meal-level: `consumedAt`, `mealType` (`BREAKFAST`/`LUNCH`/`DINNER`/`SNACK`), `foodName`, `portion` (optional), `calories`, `notes` (optional).
 
 ## Roles, tiers, and authorization
-`User` has `role` (`USER`/`NUTRITIONIST`/`ADMIN`), `subscriptionTier` (`FREE`/`PREMIUM`), and `status` (`ACTIVE`/`SUSPENDED`). The AI review endpoints require the Nutritionist or Admin role; recommendations require Premium. These checks run on the server.
+`User` has `role` (`USER`/`NUTRITIONIST`/`ADMIN`), `subscriptionTier` (`FREE`/`PREMIUM`), and `status` (`ACTIVE`/`SUSPENDED`). Premium users can create generation jobs and view their own drafts. The AI review endpoints require the Nutritionist or Admin role; approved recommendations require Premium. These checks run on the server.
 
 `/api/auth/*` routes are rate-limited (20 requests / 15 min per IP) against brute-force/abuse.
 
@@ -91,14 +91,14 @@ The API needs a PostgreSQL connection string in your local `.env`. It can use Su
 
 ## AI meal recommendation demo
 
-The AI meal feature uses a local Ollama model to draft meal candidates. A verified nutritionist account must check ingredients, tags, serving size, calories, macros, and the nutrition source before approving a candidate. Only approved meals appear in Premium recommendations. The model does not determine trusted nutrition values. This feature is for general wellness, not medical diets or allergy-safety guarantees.
+The AI meal feature uses a local Ollama model to draft complete recipes with ingredients, steps, serving size, and approximate calories and macros. A verified nutritionist account must check these values against a reliable nutrition source and assign dietary and ingredient exclusion tags before approving a candidate. Generated values are estimates. Only approved meals appear in Premium recommendations. This feature is for general wellness, not medical diets or allergy-safety guarantees.
 
 1. Install [Ollama for Windows](https://docs.ollama.com/windows), then run `ollama pull gemma3:4b`. Keep Ollama running on the same PC as the Express API. The API uses `http://127.0.0.1:11434` by default; adjust `OLLAMA_URL` and `OLLAMA_MODEL` in `.env` only if needed.
 2. Configure `DATABASE_URL` and `JWT_SECRET` in `.env`, then run `npm install`, `npm run prisma:migrate`, and `npm run dev`. This migration adds AI meals, generation jobs, and dietary profile fields. Generation jobs interrupted by an API restart are marked failed and can be started again.
 3. For a local demo without email delivery, set unique `DEMO_PREMIUM_PASSWORD` and `DEMO_NUTRITIONIST_PASSWORD` values (at least 12 characters) in `.env`, then run `npm run demo:users`. This creates verified `premium@foodiemeter.local` and `nutritionist@foodiemeter.local` accounts. Existing accounts are left unchanged. Alternatively, register and verify accounts normally, then assign access with `npm run demo:access -- nutritionist@example.com nutritionist` and `npm run demo:access -- premium@example.com premium`. Both commands refuse to run with `NODE_ENV=production`.
-4. Log in as the nutritionist in Expo. Open **Profile → Review AI meals**, generate candidates, then verify and approve one. Log in as the Premium user, set a calorie goal and dietary preference, then open **Premium → AI meal recommendations**. Free accounts receive 403 from `/api/recommendations`.
+4. Log in as the Premium user in Expo, open **Premium → AI meal recommendations**, and tap **Generate 2 meal ideas**. The Premium user can see the generated recipes while they await review. Log in as the nutritionist, open **Profile → Review AI meals**, verify ingredients, nutrition, serving, and tags, enter the nutrition source, save, and approve. Log back in as Premium, set a calorie goal and dietary preference, then view the approved recommendations. Free accounts receive 403 from both generation and recommendations.
 
-Generation is asynchronous: the nutritionist screen polls a persisted job. If Ollama is offline or returns invalid output, the job becomes `FAILED` and shows the reason. Recommendation requests do not call Ollama. Swagger documents the review and recommendation endpoints at `/api/docs`.
+Generation is asynchronous: the Premium and nutritionist screens poll persisted jobs. The API requests one complete recipe at a time to keep local generation responsive; two recipes took about 35 seconds on the test PC, but timing varies. If Ollama is offline or returns invalid output, the job becomes `FAILED` and shows the reason. Recommendation requests do not call Ollama. Swagger documents the generation, review, and recommendation endpoints at `/api/docs`.
 
 The current Expo app still has mock-only areas outside auth, goals, diary, profile, and AI meal recommendations. Premium access is assigned to test accounts; there is no payment flow.
 

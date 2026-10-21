@@ -1,19 +1,18 @@
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
-const { MEAL_TYPES, DIETARY_PREFERENCES, INGREDIENT_TAGS } = require('./constants');
+const { MEAL_TYPES } = require('./constants');
 
 const MODEL = process.env.OLLAMA_MODEL || 'gemma3:4b';
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
 let workerRunning = false;
 
-function normalizeTags(value, allowed) {
-  if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) return null;
-  const tags = [...new Set(value.map(item => item.trim().toUpperCase()))];
-  return tags.every(tag => allowed.includes(tag)) ? tags : null;
-}
-
 function validText(value, max = 2000) {
   return typeof value === 'string' && value.trim().length > 0 && value.length <= max;
+}
+
+function validLines(value, min, max, maxLength) {
+  return Array.isArray(value) && value.length >= min && value.length <= max &&
+    value.every(line => validText(line, maxLength));
 }
 
 function validateGenerated(payload, expectedCount) {
@@ -21,15 +20,20 @@ function validateGenerated(payload, expectedCount) {
     throw new Error('Model returned the wrong number of meals');
   }
   return payload.meals.map(item => {
-    const dietaryTags = normalizeTags(item.dietaryTags, DIETARY_PREFERENCES.slice(1));
-    const ingredientTags = normalizeTags(item.ingredientTags, INGREDIENT_TAGS);
-    if (!validText(item.title, 120) || !validText(item.ingredients) || !validText(item.instructions) ||
-        !MEAL_TYPES.includes(item.mealType) || !dietaryTags || !ingredientTags) {
+    if (!validText(item.title, 120) || !validLines(item.ingredients, 4, 6, 100) ||
+        !validLines(item.instructions, 3, 5, 180) ||
+        !MEAL_TYPES.includes(item.mealType) ||
+        !validText(item.serving, 120) || item.serving.trim().length < 8 ||
+        !Number.isInteger(item.calories) || item.calories < 50 || item.calories > 2000 ||
+        ['protein', 'carbs', 'fat'].some(key => !Number.isInteger(item[key]) || item[key] < 0 || item[key] > 500)) {
       throw new Error('Model returned an invalid meal');
     }
     return {
-      title: item.title.trim(), ingredients: item.ingredients.trim(), instructions: item.instructions.trim(),
-      mealType: item.mealType, dietaryTags, ingredientTags,
+      title: item.title.trim(),
+      ingredients: item.ingredients.map(line => line.trim()).join('\n'),
+      instructions: item.instructions.map((line, index) => `${index + 1}. ${line.trim()}`).join('\n'),
+      mealType: item.mealType, dietaryTags: [], ingredientTags: [], serving: item.serving.trim(),
+      calories: item.calories, protein: item.protein, carbs: item.carbs, fat: item.fat,
     };
   });
 }
@@ -38,31 +42,41 @@ async function generateWithOllama(count) {
   const format = {
     type: 'object', required: ['meals'], additionalProperties: false,
     properties: { meals: {
-      type: 'array', minItems: count, maxItems: count,
+      type: 'array', minItems: 1, maxItems: 1,
       items: { type: 'object', additionalProperties: false,
-        required: ['title', 'ingredients', 'instructions', 'mealType', 'dietaryTags', 'ingredientTags'],
+        required: ['title', 'ingredients', 'instructions', 'mealType',
+          'serving', 'calories', 'protein', 'carbs', 'fat'],
         properties: {
-          title: { type: 'string' }, ingredients: { type: 'string' }, instructions: { type: 'string' },
+          title: { type: 'string', maxLength: 120 },
+          ingredients: { type: 'array', minItems: 4, maxItems: 6, items: { type: 'string', maxLength: 100 } },
+          instructions: { type: 'array', minItems: 3, maxItems: 5, items: { type: 'string', maxLength: 180 } },
           mealType: { type: 'string', enum: MEAL_TYPES },
-          dietaryTags: { type: 'array', items: { type: 'string', enum: DIETARY_PREFERENCES.slice(1) } },
-          ingredientTags: { type: 'array', items: { type: 'string', enum: INGREDIENT_TAGS } },
+          serving: { type: 'string', minLength: 8, maxLength: 120 },
+          calories: { type: 'integer', minimum: 50, maximum: 2000 },
+          protein: { type: 'integer', minimum: 0, maximum: 500 },
+          carbs: { type: 'integer', minimum: 0, maximum: 500 },
+          fat: { type: 'integer', minimum: 0, maximum: 500 },
         },
       },
     } },
   };
-  const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-    method: 'POST', signal: AbortSignal.timeout(180000),
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, stream: false, format, options: { temperature: 0 }, messages: [
-      { role: 'system', content: 'Suggest ordinary meal recipes for general wellness only. No medical claims. Do not provide calorie or nutrient estimates. Ingredient and dietary tags are suggestions for a nutritionist to verify.' },
-      { role: 'user', content: `Generate exactly ${count} distinct meal recipes as JSON matching the provided schema. Ingredients and instructions should be clear and practical. Include all relevant ingredient tags from the allowed list.` },
-    ] }),
-  });
-  if (!response.ok) throw new Error(`Ollama returned HTTP ${response.status}`);
-  const result = await response.json();
-  let parsed;
-  try { parsed = JSON.parse(result.message?.content || ''); } catch { throw new Error('Model returned invalid JSON'); }
-  return validateGenerated(parsed, count);
+  const meals = [];
+  for (let index = 0; index < count; index += 1) {
+    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: 'POST', signal: AbortSignal.timeout(90000),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: MODEL, stream: false, format, options: { temperature: 0, num_predict: 600 }, messages: [
+        { role: 'system', content: 'Suggest ordinary meal recipes for general wellness only. No medical claims. Generated nutrition values are unverified drafts for a nutritionist to check against a reliable source.' },
+        { role: 'user', content: `Generate exactly one ${['breakfast', 'lunch', 'dinner', 'snack'][index % 4]} recipe as JSON${meals.length ? `, different from ${meals.map(meal => meal.title).join(', ')}` : ''}. Give 4-6 separate ingredients with quantities and 3-5 separate cooking steps. Use exact ingredients and steps, with no alternatives or optional items. State a measurable serving size such as "1 bowl (350 g)", never just "1". Give approximate whole-number calories, protein, carbs, and fat per serving. Keep each field concise.` },
+      ] }),
+    });
+    if (!response.ok) throw new Error(`Ollama returned HTTP ${response.status}`);
+    const result = await response.json();
+    let parsed;
+    try { parsed = JSON.parse(result.message?.content || ''); } catch { throw new Error('Model returned invalid JSON'); }
+    meals.push(...validateGenerated(parsed, 1));
+  }
+  return meals;
 }
 
 async function runNextJob() {

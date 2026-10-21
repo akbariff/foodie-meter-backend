@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, ScreenTitle, uiStyles } from '../components/UI';
 import { useApp } from '../context/AppContext';
-import { api, MealType, RecommendationData } from '../services/api';
+import { api, GenerationJob, MealType, RecommendationData } from '../services/api';
 import { colors } from '../theme';
 import { Recipe } from '../types';
 
@@ -14,6 +14,27 @@ export function RecommendationsScreen() {
   const [data, setData] = useState<RecommendationData | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [jobs, setJobs] = useState<GenerationJob[]>([]);
+  const [jobError, setJobError] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const approvedVersion = jobs.flatMap(job => job.meals || []).filter(meal => meal.status === 'APPROVED')
+    .map(meal => `${meal.id}:${meal.reviewedAt}`).join('|');
+  const refreshJobs = async () => {
+    try { setJobs(await api.getGenerationJobs()); setJobError(''); }
+    catch (err) { setJobError(String((err as Error).message)); }
+  };
+  useEffect(() => {
+    if (!user?.premium) return;
+    void refreshJobs();
+    const timer = setInterval(() => { void refreshJobs(); }, 5000);
+    return () => clearInterval(timer);
+  }, [user?.premium]);
+  const generate = async () => {
+    setGenerating(true);
+    try { await api.startGeneration(2); await refreshJobs(); }
+    catch (err) { setJobError(String((err as Error).message)); }
+    finally { setGenerating(false); }
+  };
   useEffect(() => {
     let active = true;
     setLoading(true); setError('');
@@ -22,10 +43,34 @@ export function RecommendationsScreen() {
       .catch(err => { if (active) { setData(null); setError(String(err.message)); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [mealType]);
+  }, [mealType, approvedVersion]);
   return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}>
     <ScreenTitle title="For you today" subtitle="Nutritionist-approved AI meal ideas" back/>
     {!user?.premium && <Text style={uiStyles.muted}>A Premium test account is required.</Text>}
+    {user?.premium && <Card>
+      <Text style={uiStyles.h2}>My AI meal requests</Text>
+      <Text style={uiStyles.muted}>Generated meals are drafts until a nutritionist approves them. Nutrition figures are AI estimates until reviewed.</Text>
+      <Button title={generating ? 'Starting...' : 'Generate 2 meal ideas'}
+        disabled={generating || jobs.some(job => ['PENDING','RUNNING'].includes(job.status))} onPress={() => void generate()}/>
+      <Button title="Refresh requests" secondary onPress={() => void refreshJobs()}/>
+      {!!jobError && <Text style={uiStyles.body}>{jobError}</Text>}
+      {jobs.length === 0 && <Text style={uiStyles.muted}>No requests yet.</Text>}
+      {jobs.map(job => <View key={job.id} style={styles.job}>
+        <Text style={uiStyles.h2}>Request: {job.status}</Text>
+        <Text style={uiStyles.muted}>{new Date(job.createdAt).toLocaleString()}</Text>
+        {!!job.error && <Text style={uiStyles.body}>{job.error}</Text>}
+        {(job.meals || []).map(meal => <View key={meal.id} style={styles.draft}>
+          <Text style={styles.name}>{meal.title} · {meal.mealType}</Text>
+          <Text style={uiStyles.muted}>{meal.status === 'APPROVED' ? 'Nutritionist approved' : meal.status === 'REJECTED' ? 'Rejected by nutritionist' : 'Awaiting nutritionist review — unverified AI draft'}</Text>
+          <Text style={uiStyles.body}>Serving: {meal.serving || 'Not provided'}</Text>
+          <Text style={uiStyles.body}>{meal.calories ?? '—'} kcal · Protein {meal.protein ?? '—'} g · Carbs {meal.carbs ?? '—'} g · Fat {meal.fat ?? '—'} g</Text>
+          <Text style={uiStyles.body}>Ingredients: {meal.ingredients}</Text>
+          <Text style={uiStyles.body}>Instructions: {meal.instructions}</Text>
+          {meal.status === 'APPROVED' && !!meal.nutritionSource && <Text style={uiStyles.muted}>Nutrition source: {meal.nutritionSource}</Text>}
+          {meal.status === 'REJECTED' && !!meal.reviewNotes && <Text style={uiStyles.muted}>Review: {meal.reviewNotes}</Text>}
+        </View>)}
+      </View>)}
+    </Card>}
     {data && <><Text style={styles.remaining}>{data.remainingCalories} kcal</Text><Text style={uiStyles.muted}>Remaining today from your backend diary</Text></>}
     <View style={styles.filters}>{TYPES.map(type => <Pressable key={type} onPress={() => setMealType(type)} style={[styles.filter, mealType === type && styles.selected]}><Text style={styles.filterText}>{type}</Text></Pressable>)}</View>
     {loading && <Text style={uiStyles.muted}>Loading approved meals...</Text>}
@@ -54,4 +99,6 @@ const styles = StyleSheet.create({
   filter: { padding: 8, borderRadius: 8, backgroundColor: colors.primarySoft },
   selected: { backgroundColor: colors.primary },
   filterText: { fontSize: 11, color: colors.text },
+  job: { paddingTop: 12, marginTop: 12, borderTopWidth: 1, borderTopColor: colors.primarySoft },
+  draft: { marginTop: 10, padding: 10, borderRadius: 8, backgroundColor: colors.primarySoft, gap: 4 },
 });

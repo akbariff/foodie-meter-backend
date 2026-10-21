@@ -84,6 +84,7 @@ export function AiMealReviewScreen() {
     </Card></Pressable>)}
     {selected && form && <Card>
       <Text style={uiStyles.h2}>Review: {selected.title}</Text>
+      <Text style={uiStyles.muted}>Serving size and nutrition fields start as AI estimates. Check and correct them using a reliable source. Set dietary and ingredient tags yourself from the recipe before approval.</Text>
       <Field label="Title" value={form.title} onChangeText={title=>patch({title})}/>
       <Field label="Ingredients" multiline value={form.ingredients} onChangeText={ingredients=>patch({ingredients})}/>
       <Field label="Instructions" multiline value={form.instructions} onChangeText={instructions=>patch({instructions})}/>
@@ -92,11 +93,11 @@ export function AiMealReviewScreen() {
       <Text style={uiStyles.h2}>Ingredient exclusion tags</Text>{INGREDIENTS.map(tag=><Button key={tag} title={`${form.ingredientTags.includes(tag)?'✓ ':''}${tag}`} secondary onPress={()=>toggle('ingredientTags',tag)}/>)}
       <Field label="Serving size" value={form.serving} onChangeText={serving=>patch({serving})}/>
       {(['calories','protein','carbs','fat'] as const).map(key=><Field key={key} label={`${key} ${key==='calories'?'kcal':'g'}`} keyboardType="numeric" value={form[key]} onChangeText={value=>patch({[key]:value})}/>)}
-      <Field label="Nutrition source / calculation" value={form.nutritionSource} onChangeText={nutritionSource=>patch({nutritionSource})}/>
+      <Field label="Verified nutrition source / calculation" value={form.nutritionSource} onChangeText={nutritionSource=>patch({nutritionSource})}/>
       <Field label="Review notes / rejection reason" multiline value={form.reviewNotes} onChangeText={reviewNotes=>patch({reviewNotes})}/>
       <Button title="Save changes" disabled={busy} onPress={()=>void save()}/>
       {selected.status==='PENDING' && <><Button title="Approve verified meal" onPress={()=>void approve()}/><Button title="Reject" danger onPress={()=>void reject()}/></>}
-      <Text style={uiStyles.muted}>The model's tags are suggestions. Check ingredients, nutrition and source yourself. Saving an approved meal returns it to pending review.</Text>
+      <Text style={uiStyles.muted}>Generated drafts have no diet or exclusion tags until you review them. Saving an approved meal returns it to pending review.</Text>
     </Card>}
   </ScrollView>;
 }
