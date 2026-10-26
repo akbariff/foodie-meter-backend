@@ -58,6 +58,7 @@ model User {
   excludedIngredients String[]         @default([])
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
+  leaderboardOptIn    Boolean          @default(false)
 
   verificationCodes VerificationCode[]
   calorieIntakes    CalorieIntake[]
@@ -73,6 +74,7 @@ model User {
   userProfile                      UserProfile?
   recipeReviews                    RecipeReview[]
   subscriptions                    Subscription[]
+  userBadges                       UserBadge[]
 
   @@map("users")
 }
@@ -381,4 +383,16 @@ model RecipeModeration {
   @@index([recipeId])
   @@index([reviewedById])
   @@map("recipe_moderations")
+}
+
+model UserBadge {
+  id       String   @id
+  userId   String
+  code     String
+  earnedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+  @@map("user_badges")
 }
