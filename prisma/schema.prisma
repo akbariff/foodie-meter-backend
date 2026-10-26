@@ -75,6 +75,14 @@ model User {
   recipeReviews                    RecipeReview[]
   subscriptions                    Subscription[]
   userBadges                       UserBadge[]
+  gamificationPoints               Int                       @default(0)
+  shareProgressOptIn               Boolean                   @default(false)
+
+  userStreak     UserStreak?
+  userChallenges UserChallenge[]
+
+  following UserFollow[] @relation("UserFollowing")
+  followers UserFollow[] @relation("UserFollowers")
 
   @@map("users")
 }
@@ -395,4 +403,84 @@ model UserBadge {
 
   @@unique([userId, code])
   @@map("user_badges")
+}
+
+enum ChallengeType {
+  MEAL_LOGGING
+  CALORIE_GOAL
+  BREAKFAST_LOGGING
+}
+
+enum ChallengeMode {
+  INDIVIDUAL
+  GROUP
+}
+
+model UserStreak {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActiveDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_streaks")
+}
+
+model Challenge {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  type        ChallengeType
+  mode        ChallengeMode @default(INDIVIDUAL)
+
+  targetValue  Int
+  pointsReward Int @default(0)
+
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+
+  participants UserChallenge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, startDate, endDate])
+  @@map("challenges")
+}
+
+model UserChallenge {
+  userId      String
+  challengeId String
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  progress    Int       @default(0)
+  completedAt DateTime?
+  joinedAt    DateTime  @default(now())
+
+  @@id([userId, challengeId])
+  @@index([challengeId, progress])
+  @@map("user_challenges")
+}
+
+model UserFollow {
+  followerId  String
+  followingId String
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+  @@map("user_follows")
 }
