@@ -1,0 +1,279 @@
+// Foodie Meter backend data model
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  NUTRITIONIST
+  ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id               String           @id @default(uuid())
+  name             String
+  email            String           @unique
+  passwordHash     String
+  isVerified       Boolean          @default(false)
+  role             UserRole         @default(USER)
+  subscriptionTier SubscriptionTier @default(FREE)
+  status           AccountStatus    @default(ACTIVE)
+  dietaryPreference String          @default("ANY")
+  excludedIngredients String[]      @default([])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  verificationCodes VerificationCode[]
+  calorieIntakes    CalorieIntake[]
+  calorieGoal       CalorieGoal?
+  recipes           Recipe[]
+  aiGenerationJobs  AiGenerationJob[] @relation("JobCreator")
+  reviewedAiMeals   AiMeal[]          @relation("MealReviewer")
+
+  gamificationPoints Int     @default(0)
+  shareProgressOptIn Boolean @default(false)
+
+  userStreak       UserStreak?
+  userChallenges   UserChallenge[]
+
+  following UserFollow[] @relation("UserFollowing")
+  followers UserFollow[] @relation("UserFollowers")
+
+  @@map("users")
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model VerificationCode {
+  id         String              @id @default(uuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  purpose    VerificationPurpose @default(EMAIL_VERIFY)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime            @default(now())
+
+  @@index([userId, purpose])
+  @@map("verification_codes")
+}
+
+model CalorieGoal {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetCalories Int
+  effectiveDate  DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("calorie_goals")
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model CalorieIntake {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consumedAt DateTime
+  mealType   MealType
+  foodName   String
+  portion    String?
+  calories   Int
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, consumedAt])
+  @@map("calorie_intakes")
+}
+
+model NutritionistRecipe {
+  id           String   @id @default(uuid())
+  title        String
+  ingredients  String
+  instructions String
+  createdAt    DateTime @default(now())
+
+  copiedByRecipes Recipe[]
+
+  @@map("nutritionist_recipes")
+}
+
+model Recipe {
+  id                          String               @id @default(uuid())
+  userId                      String
+  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                       String
+  ingredients                 String
+  instructions                String
+  sourceNutritionistRecipeId  String?
+  sourceNutritionistRecipe    NutritionistRecipe?  @relation(fields: [sourceNutritionistRecipeId], references: [id], onDelete: SetNull)
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+
+  @@index([userId])
+  @@map("recipes")
+}
+
+enum AiJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum AiMealStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AiGenerationJob {
+  id          String      @id @default(uuid())
+  createdById String
+  createdBy   User        @relation("JobCreator", fields: [createdById], references: [id])
+  modelName   String
+  count       Int
+  status      AiJobStatus @default(PENDING)
+  error       String?
+  createdAt   DateTime    @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  meals       AiMeal[]
+
+  @@map("ai_generation_jobs")
+}
+
+model AiMeal {
+  id              String       @id @default(uuid())
+  jobId           String
+  job             AiGenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  title           String
+  ingredients     String
+  instructions    String
+  mealType        MealType
+  dietaryTags     String[]     @default([])
+  ingredientTags  String[]     @default([])
+  serving         String?
+  calories        Int?
+  protein         Int?
+  carbs           Int?
+  fat             Int?
+  nutritionSource String?
+  status          AiMealStatus @default(PENDING)
+  reviewNotes     String?
+  reviewedById    String?
+  reviewedBy      User?        @relation("MealReviewer", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status, mealType])
+  @@map("ai_meals")
+}
+
+enum ChallengeType {
+  MEAL_LOGGING
+  CALORIE_GOAL
+  BREAKFAST_LOGGING
+}
+
+enum ChallengeMode {
+  INDIVIDUAL
+  GROUP
+}
+
+model UserStreak {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActiveDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_streaks")
+}
+
+model Challenge {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  type        ChallengeType
+  mode        ChallengeMode @default(INDIVIDUAL)
+
+  targetValue  Int
+  pointsReward Int @default(0)
+
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean @default(true)
+
+  participants UserChallenge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, startDate, endDate])
+  @@map("challenges")
+}
+
+model UserChallenge {
+  userId      String
+  challengeId String
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  progress    Int       @default(0)
+  completedAt DateTime?
+  joinedAt    DateTime  @default(now())
+
+  @@id([userId, challengeId])
+  @@index([challengeId, progress])
+  @@map("user_challenges")
+}
+
+model UserFollow {
+  followerId  String
+  followingId String
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+  @@map("user_follows")
+}
