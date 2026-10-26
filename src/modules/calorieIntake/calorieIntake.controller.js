@@ -1,3 +1,4 @@
+const gamificationService = require('../gamification/gamification.service');
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
 const { ok, created } = require('../../utils/respond');
@@ -19,9 +20,23 @@ async function assertOwnedEntry(id, userId) {
 async function create(req, res) {
   const { consumedAt, mealType, foodName, portion, calories, notes } = req.body;
   const entry = await prisma.calorieIntake.create({
-    data: { userId: req.user.id, consumedAt: new Date(consumedAt), mealType, foodName, portion, calories, notes },
-  });
-  created(res, entry);
+  data: {
+    userId: req.user.id,
+    consumedAt: new Date(consumedAt),
+    mealType,
+    foodName,
+    portion,
+    calories,
+    notes,
+  },
+});
+
+await gamificationService.recordMealLogged(
+  req.user.id,
+  entry
+);
+
+created(res, entry);
 }
 
 async function list(req, res) {

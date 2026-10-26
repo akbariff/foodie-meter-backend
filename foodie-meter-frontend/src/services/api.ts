@@ -23,6 +23,80 @@ export type RecommendationMeal = Omit<AiMeal, 'status' | 'reviewNotes'> & { revi
 export type RecommendationData = { date: string; mealType: MealType; targetCalories: number; consumedCalories: number; remainingCalories: number; meals: RecommendationMeal[] };
 export type BackendDiaryEntry = { id: string; consumedAt: string; mealType: MealType; foodName: string; calories: number };
 
+export type GamificationBadge = {
+  code: string;
+  title: string;
+  description: string;
+  earned?: boolean;
+  earnedAt: string | null;
+};
+
+export type UserStreak = {
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string | null;
+};
+
+export type GamificationChallenge = {
+  id: string;
+  title: string;
+  description: string;
+  type: 'MEAL_LOGGING' | 'CALORIE_GOAL' | 'BREAKFAST_LOGGING';
+  mode: 'INDIVIDUAL' | 'GROUP';
+  targetValue: number;
+  pointsReward: number;
+  startDate: string;
+  endDate: string;
+  joined: boolean;
+  progress: number;
+  completedAt: string | null;
+};
+
+export type GamificationDashboard = {
+  id: string;
+  name: string;
+  gamificationPoints: number;
+  leaderboardOptIn: boolean;
+  shareProgressOptIn: boolean;
+  userStreak: UserStreak | null;
+  userBadges: GamificationBadge[];
+  userChallenges: Array<{
+    userId: string;
+    challengeId: string;
+    progress: number;
+    completedAt: string | null;
+    joinedAt: string;
+    challenge: GamificationChallenge;
+  }>;
+  _count: {
+    following: number;
+    followers: number;
+  };
+};
+
+export type LeaderboardEntry = {
+  rank: number;
+  id: string;
+  name: string;
+  gamificationPoints: number;
+};
+
+export type LeaderboardData = {
+  currentUserRank: number | null;
+  entries: LeaderboardEntry[];
+};
+
+export type FollowingUser = {
+  id: string;
+  name: string;
+  followedAt: string;
+  progress: {
+    gamificationPoints: number;
+    currentStreak: number;
+    longestStreak: number;
+  } | null;
+};
+
 let accessToken: string | null = null;
 export const setAccessToken = (token: string | null) => { accessToken = token; };
 
@@ -57,4 +131,14 @@ export const api = {
   updateAiMeal: (id: string, payload: Partial<AiMeal>) => request<AiMeal>(`/ai-meals/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   approveAiMeal: (id: string) => request<AiMeal>(`/ai-meals/${id}/approve`, { method: 'POST', body: JSON.stringify({ reviewConfirmed: true }) }),
   rejectAiMeal: (id: string, notes: string) => request<AiMeal>(`/ai-meals/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  getGamificationDashboard: () => request<GamificationDashboard>('/gamification/me'),
+  getBadges: () => request<GamificationBadge[]>('/gamification/badges'),
+  getChallenges: () => request<GamificationChallenge[]>('/gamification/challenges'),
+  joinChallenge: (id: string) => request(`/gamification/challenges/${id}/join`, { method: 'POST',}),
+  getLeaderboard: () => request<LeaderboardData>('/gamification/leaderboard'),
+  getFollowing: () => request<FollowingUser[]>('/gamification/following'),
+  followUser: (userId: string) => request(`/gamification/follow/${userId}`, {method: 'POST',}),
+  unfollowUser: (userId: string) => request<void>(`/gamification/follow/${userId}`, { method: 'DELETE',}),
+  updateGamificationSettings: (payload: { leaderboardOptIn?: boolean;shareProgressOptIn?: boolean;}) =>
+  request<{ leaderboardOptIn: boolean; shareProgressOptIn: boolean;}>('/gamification/settings', { method: 'PUT', body: JSON.stringify(payload),}),
 };

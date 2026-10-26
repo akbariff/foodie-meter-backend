@@ -13,6 +13,7 @@ const recipesRoutes = require('./modules/recipes/recipes.routes');
 const nutritionistRecipesRoutes = require('./modules/nutritionistRecipes/nutritionistRecipes.routes');
 const aiMealsRoutes = require('./modules/aiMeals/aiMeals.routes');
 const recommendationsRoutes = require('./modules/aiMeals/recommendations.routes');
+const gamificationRoutes = require('./modules/gamification/gamification.routes');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/recipes', recipesRoutes);
 app.use('/api/nutritionist-recipes', nutritionistRecipesRoutes);
 app.use('/api/ai-meals', aiMealsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
+app.use('/api/gamification', gamificationRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

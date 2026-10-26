@@ -12,12 +12,32 @@ async function main() {
     throw new Error('Set DEMO_PREMIUM_PASSWORD and DEMO_NUTRITIONIST_PASSWORD (12+ characters) in .env');
   }
   for (const account of accounts) {
-    const existing = await prisma.user.findUnique({ where: { email: account.email } });
-    if (existing) { console.log(`${account.email} already exists; left unchanged`); continue; }
-    await prisma.user.create({ data: { email: account.email, name: account.name,
-      passwordHash: await bcrypt.hash(account.password, 10), isVerified: true,
-      role: account.role, subscriptionTier: account.subscriptionTier } });
-    console.log(`Created ${account.email}`);
+    const passwordHash = await bcrypt.hash(account.password, 10);
+
+await prisma.user.upsert({
+  where: {
+    email: account.email,
+  },
+  update: {
+    name: account.name,
+    passwordHash,
+    isVerified: true,
+    role: account.role,
+    subscriptionTier: account.subscriptionTier,
+    status: 'ACTIVE',
+  },
+  create: {
+    email: account.email,
+    name: account.name,
+    passwordHash,
+    isVerified: true,
+    role: account.role,
+    subscriptionTier: account.subscriptionTier,
+    status: 'ACTIVE',
+  },
+});
+
+console.log(`Created/updated ${account.email}`);
   }
 }
 

@@ -2,7 +2,7 @@ export type ScreenName =
   | 'Login' | 'Register' | 'VerifyEmail' | 'ForgotPassword'
   | 'Home' | 'Goal' | 'Recommendations' | 'RecipeDetails'
   | 'LogMeal' | 'Diary' | 'MyRecipes' | 'RecipeEditor'
-  | 'Profile' | 'Reviews' | 'Premium' | 'Insights' | 'ManageSubscription' | 'AiMealReview';
+  | 'Profile' | 'Reviews' | 'Premium' | 'Insights' | 'ManageSubscription' | 'AiMealReview' | 'Gamification';
 
 export type Goal = {
   goalType: 'Lose' | 'Maintain' | 'Gain';
