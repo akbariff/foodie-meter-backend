@@ -14,6 +14,16 @@ const nutritionistRecipesRoutes = require('./modules/nutritionistRecipes/nutriti
 const aiMealsRoutes = require('./modules/aiMeals/aiMeals.routes');
 const recommendationsRoutes = require('./modules/aiMeals/recommendations.routes');
 const gamificationRoutes = require('./modules/gamification/gamification.routes');
+const userProfileRoutes = require('./modules/userProfile/userProfile.routes');
+const recipeReviewsRoutes = require('./modules/recipeReviews/recipeReviews.routes');
+const subscriptionRoutes = require('./modules/subscription/subscription.routes');
+const adminRoutes = require('./modules/admin/admin.routes');
+const nutritionistApplicationsRoutes = require('./modules/nutritionistApplications/nutritionistApplications.routes');
+const nutritionCategoriesRoutes = require('./modules/nutritionContent/categories.routes');
+const nutritionContentsRoutes = require('./modules/nutritionContent/content.routes');
+const recipeModerationRoutes = require('./modules/recipeModeration/recipeModeration.routes');
+const weightLogRoutes = require('./modules/weightLog/weightLog.routes');
+const analyticsRoutes = require('./modules/analytics/analytics.routes');
 
 const app = express();
 
@@ -34,6 +44,16 @@ app.use('/api/nutritionist-recipes', nutritionistRecipesRoutes);
 app.use('/api/ai-meals', aiMealsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 app.use('/api/gamification', gamificationRoutes);
+app.use('/api/profile', userProfileRoutes);
+app.use('/api/recipe-reviews', recipeReviewsRoutes);
+app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/nutritionist-applications', nutritionistApplicationsRoutes);
+app.use('/api/nutrition-categories', nutritionCategoriesRoutes);
+app.use('/api/nutrition-contents', nutritionContentsRoutes);
+app.use('/api/recipe-moderation', recipeModerationRoutes);
+app.use('/api/weight-log', weightLogRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

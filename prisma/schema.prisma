@@ -72,6 +72,7 @@ model User {
   nutritionContents                NutritionContent[]
   recipeModerations                RecipeModeration[]
   userProfile                      UserProfile?
+  weightLogs                       WeightLog[]
   recipeReviews                    RecipeReview[]
   subscriptions                    Subscription[]
   userBadges                       UserBadge[]
@@ -246,6 +247,18 @@ model UserProfile {
   updatedAt DateTime @updatedAt
 
   @@map("user_profiles")
+}
+
+model WeightLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weightKg  Float
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId, loggedAt])
+  @@map("weight_logs")
 }
 
 model RecipeReview {
