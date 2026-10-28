@@ -30,8 +30,74 @@ export function ProfileScreen(){
  </ScrollView>;
 }
 
-export function PremiumScreen(){const {user,upgradePremium,navigate}=useApp(); if(user?.premium)return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Premium" subtitle="Premium test access is active"/><Card><Text style={styles.active}>✦ Premium test account</Text><Text style={uiStyles.body}>Nutritionist-reviewed AI meal recommendations are available.</Text></Card><Button title="AI meal recommendations" onPress={()=>navigate('Recommendations')}/> <Button title="Progress & insights" secondary onPress={()=>navigate('Insights')}></Button> <Button title="Achievements & community" secondary onPress={() => navigate('Gamification')}/></ScrollView>;
-return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Premium" subtitle="AI meal recommendations for Premium test accounts"/><Card><Text style={uiStyles.body}>This FYP version has no payment flow. An admin can assign Premium access to a verified test account.</Text></Card><Button title="How to get demo access" onPress={upgradePremium}/></ScrollView>}
+export function PremiumScreen() {
+  const { user, upgradePremium, navigate } = useApp();
+
+  if (user?.premium) {
+    return (
+      <ScrollView
+        style={uiStyles.screen}
+        contentContainerStyle={uiStyles.scrollContent}
+      >
+        <ScreenTitle
+          title="Premium"
+          subtitle="Premium test access is active"
+        />
+
+        <Card>
+          <Text style={styles.active}>
+            ✦ Premium test account
+          </Text>
+
+          <Text style={uiStyles.body}>
+            Nutritionist-reviewed AI meal recommendations are available.
+          </Text>
+        </Card>
+
+        <Button
+          title="AI meal recommendations"
+          onPress={() => navigate('Recommendations')}
+        />
+
+        <Button
+          title="Progress & insights"
+          secondary
+          onPress={() => navigate('Insights')}
+        />
+
+        <Button
+          title="Achievements & community"
+          secondary
+          onPress={() => navigate('Gamification')}
+        />
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={uiStyles.screen}
+      contentContainerStyle={uiStyles.scrollContent}
+    >
+      <ScreenTitle
+        title="Premium"
+        subtitle="AI meal recommendations for Premium test accounts"
+      />
+
+      <Card>
+        <Text style={uiStyles.body}>
+          This FYP version has no payment flow. An admin can assign
+          Premium access to a verified test account.
+        </Text>
+      </Card>
+
+      <Button
+        title="How to get demo access"
+        onPress={upgradePremium}
+      />
+    </ScrollView>
+  );
+}
 
 export function InsightsScreen(){const {consumed,goal,diary}=useApp(); const protein=diary.reduce((s,x)=>s+(x.protein||0),0); return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="Progress & insights" subtitle="A lightweight demo of your Premium analytics" back/><Card><Text style={styles.metric}>{Math.round((consumed/goal.calories)*100)}%</Text><Text style={uiStyles.muted}>of today’s calorie target consumed</Text></Card><Card><Text style={styles.metric}>{protein} g</Text><Text style={uiStyles.muted}>protein logged today • target {goal.protein} g</Text></Card><Card><Text style={styles.active}>Personalized nudge</Text><Text style={uiStyles.body}>{protein<goal.protein?'You are below your protein target. Consider a high-protein dinner.':'Protein intake is on track today.'}</Text></Card></ScrollView>}
 
