@@ -117,4 +117,26 @@ router.patch(
   asyncHandler(controller.updateRole)
 );
 
+router.post(
+  '/users/:id/password-reset',
+  [
+    param('id')
+      .isUUID()
+      .withMessage('Invalid user id'),
+  ],
+  validate,
+  asyncHandler(controller.sendPasswordReset)
+);
+
+router.delete(
+  '/users/:id',
+  [
+    param('id')
+      .isUUID()
+      .withMessage('Invalid user id'),
+  ],
+  validate,
+  asyncHandler(controller.removeUser)
+);
+
 module.exports = router;

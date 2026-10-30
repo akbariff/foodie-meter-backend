@@ -19,6 +19,7 @@ export type GenerationJob = {
   status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
   error: string | null; meals?: AiMeal[];
 };
+
 export type RecommendationMeal = Omit<AiMeal, 'status' | 'reviewNotes'> & { reviewedAt: string };
 export type RecommendationData = { date: string; mealType: MealType; targetCalories: number; consumedCalories: number; remainingCalories: number; meals: RecommendationMeal[] };
 export type BackendDiaryEntry = { id: string; consumedAt: string; mealType: MealType; foodName: string; calories: number };
@@ -97,6 +98,31 @@ export type FollowingUser = {
   } | null;
 };
 
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  isVerified: boolean;
+  role: 'USER' | 'NUTRITIONIST' | 'ADMIN';
+  subscriptionTier: 'FREE' | 'PREMIUM';
+  status: 'ACTIVE' | 'SUSPENDED';
+  createdAt: string;
+};
+
+export type NutritionistApplication = {
+  id: string;
+  name: string;
+  email: string;
+  qualification: string;
+  specialty: string;
+  experience?: string | null;
+  supportingInfo?: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewNotes?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+};
+
 let accessToken: string | null = null;
 export const setAccessToken = (token: string | null) => { accessToken = token; };
 
@@ -141,4 +167,78 @@ export const api = {
   unfollowUser: (userId: string) => request<void>(`/gamification/follow/${userId}`, { method: 'DELETE',}),
   updateGamificationSettings: (payload: { leaderboardOptIn?: boolean;shareProgressOptIn?: boolean;}) =>
   request<{ leaderboardOptIn: boolean; shareProgressOptIn: boolean;}>('/gamification/settings', { method: 'PUT', body: JSON.stringify(payload),}),
+  getAdminUsers: (params?: {
+  role?: AdminUser['role'];
+  status?: AdminUser['status'];
+  search?: string;
+}) => {
+  const query = new URLSearchParams();
+
+  if (params?.role) query.set('role', params.role);
+  if (params?.status) query.set('status', params.status);
+  if (params?.search) query.set('search', params.search);
+
+  const suffix = query.toString()
+    ? `?${query.toString()}`
+    : '';
+
+  return request<AdminUser[]>(`/admin/users${suffix}`);
+},
+
+updateAdminUserStatus: (
+  id: string,
+  status: AdminUser['status']
+) =>
+  request<AdminUser>(`/admin/users/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  }),
+
+updateAdminUserRole: (
+  id: string,
+  role: AdminUser['role']
+) =>
+  request<AdminUser>(`/admin/users/${id}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  }),
+
+getNutritionistApplications: (
+  status?: NutritionistApplication['status']
+) =>
+  request<NutritionistApplication[]>(
+    `/nutritionist-applications${
+      status ? `?status=${status}` : ''
+    }`
+  ),
+
+approveNutritionistApplication: (id: string) =>
+  request(`/nutritionist-applications/${id}/approve`, {
+    method: 'POST',
+  }),
+
+rejectNutritionistApplication: (
+  id: string,
+  notes: string
+) =>
+  request(`/nutritionist-applications/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  }),
+
+  sendAdminPasswordReset: (id: string) =>
+  request<void>(
+    `/admin/users/${id}/password-reset`,
+    {
+      method: 'POST',
+    }
+  ),
+
+deleteAdminUser: (id: string) =>
+  request<void>(
+    `/admin/users/${id}`,
+    {
+      method: 'DELETE',
+    }
+  ),
 };

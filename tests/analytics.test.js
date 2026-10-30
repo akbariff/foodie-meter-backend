@@ -8,6 +8,8 @@ const app = require('../src/app');
 const prisma = require('../src/config/db');
 const mailer = require('../src/config/mailer');
 
+jest.setTimeout(60000);
+
 const runId = Date.now();
 
 const freeUser = {

@@ -126,9 +126,10 @@ describe('Weight log API', () => {
     const otherToken = await signupAndVerify(other);
 
     const update = await request(app)
-      .put(`/api/weight-log/${entryId}`)
-      .set('Authorization', `Bearer ${otherToken}`)
-      .send({ weightKg: 1 });
+    .put(`/api/weight-log/${entryId}`)
+    .set('Authorization', `Bearer ${otherToken}`)
+    .send({ weightKg: 70 });
+  
     expect(update.status).toBe(404);
 
     const del = await request(app)

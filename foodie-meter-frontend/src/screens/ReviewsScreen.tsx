@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { colors } from '../theme';
 
 export function ReviewsScreen() {
-  const { reviews, saveReview, deleteReview, goBack, params } = useApp();
+  const {user, reviews, saveReview, deleteReview, goBack, params} = useApp();
   const [recipeTitle, setRecipeTitle] = useState(params?.recipeTitle || '');
   const [rating, setRating] = useState('5');
   const [comment, setComment] = useState('');
@@ -58,41 +58,74 @@ export function ReviewsScreen() {
       />
       <Button title={editId ? 'Update recipe review' : 'Create recipe review'} onPress={submit} />
 
-      {reviews.map((v) => (
-        <Card key={v.id}>
-          <Text style={styles.recipeTitle}>{v.recipeTitle}</Text>
-          <View style={uiStyles.spaceBetween}>
-            <Text style={styles.author}>{v.author}</Text>
-            <Text style={styles.stars}>{'★'.repeat(v.rating)}</Text>
-          </View>
-          <Text style={uiStyles.body}>{v.comment}</Text>
+      {reviews.map((v) => {
+  const isOwner =
+    !!user &&
+    v.ownerUserId === user.id;
 
-          {v.mine && (
-            <View style={styles.actions}>
-              <Pressable
-                onPress={() => {
-                  setEditId(v.id);
-                  setRecipeTitle(v.recipeTitle);
-                  setRating(String(v.rating));
-                  setComment(v.comment);
-                }}
-              >
-                <Text style={styles.link}>Edit</Text>
-              </Pressable>
-              <Pressable
-                onPress={() =>
-                  Alert.alert('Delete recipe review', 'Delete this recipe review?', [
-                    { text: 'Cancel' },
-                    { text: 'Delete', style: 'destructive', onPress: () => deleteReview(v.id) },
-                  ])
-                }
-              >
-                <Text style={styles.danger}>Delete</Text>
-              </Pressable>
-            </View>
-          )}
-        </Card>
-      ))}
+  return (
+    <Card key={v.id}>
+      <Text style={styles.recipeTitle}>
+        {v.recipeTitle}
+      </Text>
+
+      <View style={uiStyles.spaceBetween}>
+        <Text style={styles.author}>
+          {v.author}
+        </Text>
+
+        <Text style={styles.stars}>
+          {'★'.repeat(v.rating)}
+        </Text>
+      </View>
+
+      <Text style={uiStyles.body}>
+        {v.comment}
+      </Text>
+
+      {isOwner && (
+        <View style={styles.actions}>
+          <Pressable
+            onPress={() => {
+              setEditId(v.id);
+              setRecipeTitle(v.recipeTitle);
+              setRating(String(v.rating));
+              setComment(v.comment);
+            }}
+          >
+            <Text style={styles.link}>
+              Edit
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() =>
+              Alert.alert(
+                'Delete recipe review',
+                'Delete this recipe review?',
+                [
+                  {
+                    text: 'Cancel',
+                  },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () =>
+                      deleteReview(v.id),
+                  },
+                ]
+              )
+            }
+          >
+            <Text style={styles.danger}>
+              Delete
+            </Text>
+          </Pressable>
+        </View>
+      )}
+    </Card>
+    );
+    })}
     </ScrollView>
   );
 }

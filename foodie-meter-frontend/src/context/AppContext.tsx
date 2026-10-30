@@ -4,7 +4,15 @@ import { DiaryEntry, Goal, Recipe, Review, ScreenName } from '../types';
 import { recommendedMeals, starterReviews } from '../data/mock';
 import { api, setAccessToken, DietaryPreference, BackendDiaryEntry, MealType } from '../services/api';
 
-type User = { name: string; email: string; premium: boolean; dietaryPreference: DietaryPreference; excludedIngredients: string[]; role: 'USER' | 'NUTRITIONIST' | 'ADMIN' };
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  premium: boolean;
+  dietaryPreference: DietaryPreference;
+  excludedIngredients: string[];
+  role: 'USER' | 'NUTRITIONIST' | 'ADMIN';
+};
 
 type Subscription = {
   plan: 'Premium';
@@ -84,8 +92,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(result.token);
     try {
       const profile = await api.getProfile();
-      setUser({ name: profile.name, email: profile.email, premium: profile.subscriptionTier === 'PREMIUM',
-        dietaryPreference: profile.dietaryPreference, excludedIngredients: profile.excludedIngredients, role: profile.role });
+      setUser({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        premium: profile.subscriptionTier === 'PREMIUM',
+        dietaryPreference: profile.dietaryPreference,
+        excludedIngredients: profile.excludedIngredients,
+        role: profile.role
+      });
+      if (profile.role === 'ADMIN') {
+        setDiary([]);
+        setHasCalorieGoal(false);
+        setHistory([]);
+        setRoute('AdminDashboard');
+        setParams({});
+        return;
+      }
       try { const savedGoal = await api.getGoal(); setGoal(g => ({ ...g, calories: savedGoal.targetCalories })); setHasCalorieGoal(true); }
       catch { setHasCalorieGoal(false); }
       const entries = await api.getDiary(new Date().toISOString().slice(0, 10));
@@ -108,11 +131,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     else setMyRecipes(r => [{ ...recipe, id: String(Date.now()), mine: true }, ...r]);
   };
   const deleteRecipe = (id: string) => setMyRecipes(r => r.filter(x => x.id !== id));
-  const saveReview = (recipeTitle: string, rating: number, comment: string, id?: string) => {
-    if (id) setReviews(v => v.map(x => x.id === id ? { ...x, recipeTitle, rating, comment } : x));
-    else setReviews(v => [{ id: String(Date.now()), recipeTitle, author: user?.name || 'You', rating, comment, mine: true }, ...v]);
+  const saveReview = (
+    recipeTitle: string,
+    rating: number,
+    comment: string,
+    id?: string
+  ) => {
+    if (!user) return;
+
+    if (id) {
+      setReviews(current =>
+        current.map(review => {
+          if (
+            review.id === id &&
+            review.ownerUserId === user.id
+          ) {
+            return {
+              ...review,
+              recipeTitle,
+              rating,
+              comment,
+            };
+          }
+
+          return review;
+        })
+      );
+
+      return;
+    }
+
+    setReviews(current => [
+      {
+        id: String(Date.now()),
+        recipeTitle,
+        author: user.name,
+        rating,
+        comment,
+        ownerUserId: user.id,
+      },
+      ...current,
+    ]);
   };
-  const deleteReview = (id: string) => setReviews(v => v.filter(x => x.id !== id));
+
+  const deleteReview = (id: string) => {
+  if (!user) return;
+  setReviews(current =>
+    current.filter(
+      review =>
+        !(
+          review.id === id &&
+          review.ownerUserId === user.id
+        )));};
   const updateProfile = async (patch: Partial<User>) => {
     const saved = await api.updateProfile({ name: patch.name, dietaryPreference: patch.dietaryPreference, excludedIngredients: patch.excludedIngredients });
     setUser(u => u ? { ...u, name: saved.name, dietaryPreference: saved.dietaryPreference, excludedIngredients: saved.excludedIngredients } : u);

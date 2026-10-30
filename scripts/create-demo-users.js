@@ -7,9 +7,10 @@ async function main() {
   const accounts = [
     { email: 'premium@foodiemeter.local', name: 'Premium Demo', password: process.env.DEMO_PREMIUM_PASSWORD, subscriptionTier: 'PREMIUM', role: 'USER' },
     { email: 'nutritionist@foodiemeter.local', name: 'Nutritionist Demo', password: process.env.DEMO_NUTRITIONIST_PASSWORD, subscriptionTier: 'FREE', role: 'NUTRITIONIST' },
+    { email: 'admin@foodiemeter.local', name: 'System Administrator', password: process.env.DEMO_ADMIN_PASSWORD, subscriptionTier: 'FREE', role: 'ADMIN',},
   ];
   if (accounts.some(account => !account.password || account.password.length < 12)) {
-    throw new Error('Set DEMO_PREMIUM_PASSWORD and DEMO_NUTRITIONIST_PASSWORD (12+ characters) in .env');
+    throw new Error('Set DEMO_PREMIUM_PASSWORD, DEMO_NUTRITIONIST_PASSWORD and DEMO_ADMIN_PASSWORD (12+ characters) in .env');
   }
   for (const account of accounts) {
     const passwordHash = await bcrypt.hash(account.password, 10);

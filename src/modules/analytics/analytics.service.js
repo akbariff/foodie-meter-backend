@@ -106,8 +106,10 @@ async function overview(userId, days) {
       const consumedSoFar = caloriesByDay.get(dateKey(todayStart)) || 0;
       todayProjection = {
         consumedSoFar,
-        fractionOfDayElapsed: round2(fractionOfDayElapsed),
-        projectedEndOfDayCalories: Math.round(consumedSoFar / fractionOfDayElapsed),
+        fractionOfDayElapsed,
+        projectedEndOfDayCalories: Math.round(
+          consumedSoFar / fractionOfDayElapsed
+        ),
       };
     }
   }

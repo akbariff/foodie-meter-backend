@@ -1,3 +1,4 @@
+const AppError = require('../middleware/AppError');
 const nodemailer = require('nodemailer');
 const env = require('./env');
 
@@ -38,18 +39,41 @@ async function getTransporter() {
 }
 
 async function sendCodeEmail({ to, subject, label }, code) {
-  const transporter = await getTransporter();
-  const info = await transporter.sendMail({
-    from: env.smtp.from || 'Foodie Meter <no-reply@foodiemeter.dev>',
-    to,
-    subject,
-    text: `Your ${label} code is ${code}. It expires in ${env.verificationCodeTtlMinutes} minutes.`,
-    html: `<p>Your ${label} code is <strong>${code}</strong>.</p><p>It expires in ${env.verificationCodeTtlMinutes} minutes.</p>`,
-  });
+  try {
+    const transporter = await getTransporter();
 
-  const previewUrl = nodemailer.getTestMessageUrl(info);
-  if (previewUrl) {
-    console.log(`[mailer] Preview ${label} email: ${previewUrl}`);
+    const info = await transporter.sendMail({
+      from: env.smtp.from || 'Foodie Meter <no-reply@foodiemeter.dev>',
+      to,
+      subject,
+      text: `Your ${label} code is ${code}. It expires in ${env.verificationCodeTtlMinutes} minutes.`,
+      html: `<p>Your ${label} code is <strong>${code}</strong>.</p><p>It expires in ${env.verificationCodeTtlMinutes} minutes.</p>`,
+    });
+
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+
+    if (previewUrl) {
+      console.log(`[mailer] Preview ${label} email: ${previewUrl}`);
+    }
+  } catch (error) {
+    console.error(
+      `[mailer] Failed to send ${label} email to ${to}:`,
+      error.message
+    );
+
+    if (env.nodeEnv !== 'production') {
+      console.warn(
+        `[mailer] Development fallback active. Use the ${label} code printed by [auth] in the backend console.`
+      );
+
+      return;
+    }
+
+    throw new AppError(
+      503,
+      'Email service is temporarily unavailable. Please try again later.',
+      'EMAIL_DELIVERY_FAILED'
+    );
   }
 }
 

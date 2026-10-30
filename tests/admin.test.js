@@ -157,4 +157,31 @@ describe('Admin user management', () => {
 
     expect(res.status).toBe(404);
   });
+  test('admin can trigger a password reset for another user', async () => {
+  const res = await request(app)
+      .post(`/api/admin/users/${targetId}/password-reset`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+
+    expect(
+      mailer.sendPasswordResetEmail
+    ).toHaveBeenCalledWith(
+      target.email,
+      expect.any(String)
+    );
+  });
+  test('admin can remove another non-admin account', async () => {
+  const res = await request(app)
+      .delete(`/api/admin/users/${targetId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(204);
+
+    const deleted = await prisma.user.findUnique({
+      where: { id: targetId },
+    });
+
+    expect(deleted).toBeNull();
+  });
 });

@@ -1,3 +1,4 @@
+const authService = require('../auth/auth.service');
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
 const { ok } = require('../../utils/respond');
@@ -79,5 +80,76 @@ async function updateRole(req, res) {
 
   ok(res, user);
 }
+async function sendPasswordReset(req, res) {
+  await assertNotSelf(req);
 
-module.exports = { listUsers, updateStatus, updateRole };
+  const { id } = req.params;
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!user) {
+    throw new AppError(404, 'User not found');
+  }
+
+  await authService.forgotPassword(user.email);
+
+  ok(
+    res,
+    null,
+    'Password reset instructions have been sent to the user'
+  );
+}
+
+async function removeUser(req, res) {
+  await assertNotSelf(req);
+
+  const { id } = req.params;
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!user) {
+    throw new AppError(404, 'User not found');
+  }
+
+  if (user.role === 'ADMIN') {
+    throw new AppError(
+      403,
+      'Administrator accounts cannot be removed through this endpoint',
+      'CANNOT_DELETE_ADMIN'
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.aiMeal.updateMany({
+      where: { reviewedById: id },
+      data: { reviewedById: null },
+    }),
+
+    prisma.nutritionistApplication.updateMany({
+      where: { reviewedById: id },
+      data: { reviewedById: null },
+    }),
+
+    prisma.aiGenerationJob.deleteMany({
+      where: { createdById: id },
+    }),
+
+    prisma.user.delete({
+      where: { id },
+    }),
+  ]);
+
+  res.status(204).send();
+}
+
+module.exports = {
+  listUsers,
+  updateStatus,
+  updateRole,
+  sendPasswordReset,
+  removeUser,
+};

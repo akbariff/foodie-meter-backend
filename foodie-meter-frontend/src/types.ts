@@ -2,7 +2,9 @@ export type ScreenName =
   | 'Login' | 'Register' | 'VerifyEmail' | 'ForgotPassword'
   | 'Home' | 'Goal' | 'Recommendations' | 'RecipeDetails'
   | 'LogMeal' | 'Diary' | 'MyRecipes' | 'RecipeEditor'
-  | 'Profile' | 'Reviews' | 'Premium' | 'Insights' | 'ManageSubscription' | 'AiMealReview' | 'Gamification';
+  | 'Profile' | 'Reviews' | 'Premium' | 'Insights'
+  | 'ManageSubscription' | 'AiMealReview'
+  | 'Gamification' | 'AdminDashboard';
 
 export type Goal = {
   goalType: 'Lose' | 'Maintain' | 'Gain';
@@ -46,5 +48,5 @@ export type Review = {
   author: string;
   rating: number;
   comment: string;
-  mine?: boolean;
+  ownerUserId?: string;
 };
