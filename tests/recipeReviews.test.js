@@ -74,6 +74,7 @@ beforeAll(async () => {
       title: `Review Test Recipe ${runId}`,
       ingredients: 'Oats, milk, honey',
       instructions: 'Combine and refrigerate overnight.',
+      isShared: true, // only shared recipes can be reviewed by other users
     });
 
   expect(createRecipe.status).toBe(201);
@@ -93,6 +94,25 @@ describe('RecipeReview API', () => {
       .get('/api/recipe-reviews/00000000-0000-0000-0000-000000000000')
       .set('Authorization', `Bearer ${reviewerAToken}`);
 
+    expect(res.status).toBe(404);
+  });
+
+  test('a private recipe cannot be reviewed by another user', async () => {
+    const privateRecipe = await request(app)
+      .post('/api/recipes')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        title: `Private Recipe ${runId}`,
+        ingredients: 'Rice, egg',
+        instructions: 'Fry together.',
+      });
+    expect(privateRecipe.status).toBe(201);
+    expect(privateRecipe.body.data.isShared).toBe(false);
+
+    const res = await request(app)
+      .put(`/api/recipe-reviews/${privateRecipe.body.data.id}/me`)
+      .set('Authorization', `Bearer ${reviewerAToken}`)
+      .send({ rating: 5, comment: 'Should not be allowed.' });
     expect(res.status).toBe(404);
   });
 

@@ -10,6 +10,20 @@ async function assertOwnedRecipe(id, userId) {
   return recipe;
 }
 
+async function create(req, res) {
+  const { title, ingredients, instructions, isShared } = req.body;
+  const recipe = await prisma.recipe.create({
+    data: {
+      userId: req.user.id,
+      title,
+      ingredients,
+      instructions,
+      ...(isShared !== undefined ? { isShared } : {}),
+    },
+  });
+  created(res, recipe);
+}
+
 async function update(req, res) {await assertOwnedRecipe(req.params.id, req.user.id);
   const {title, ingredients, instructions, isShared,} = req.body;
   const recipe = await prisma.recipe.update({
@@ -46,20 +60,6 @@ async function list(req, res) {
 
 async function getById(req, res) {
   const recipe = await assertOwnedRecipe(req.params.id, req.user.id);
-  ok(res, recipe);
-}
-
-async function update(req, res) {
-  await assertOwnedRecipe(req.params.id, req.user.id);
-  const { title, ingredients, instructions } = req.body;
-  const recipe = await prisma.recipe.update({
-    where: { id: req.params.id },
-    data: {
-      ...(title !== undefined ? { title } : {}),
-      ...(ingredients !== undefined ? { ingredients } : {}),
-      ...(instructions !== undefined ? { instructions } : {}),
-    },
-  });
   ok(res, recipe);
 }
 
