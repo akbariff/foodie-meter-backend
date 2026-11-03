@@ -35,6 +35,7 @@ router.post(
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('ingredients').trim().notEmpty().withMessage('Ingredients are required'),
     body('instructions').trim().notEmpty().withMessage('Instructions are required'),
+    body('isShared').optional().isBoolean().withMessage('isShared must be true or false'),
   ],
   validate,
   asyncHandler(controller.create)
@@ -68,6 +69,10 @@ router.get('/', asyncHandler(controller.list));
  *       200: { description: The recipe }
  *       404: { description: Not found }
  */
+
+router.get('/public', asyncHandler(controller.listPublic));
+
+
 router.get('/:id', [param('id').isString()], validate, asyncHandler(controller.getById));
 
 /**
@@ -102,6 +107,7 @@ router.put(
     body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
     body('ingredients').optional().trim().notEmpty().withMessage('Ingredients cannot be empty'),
     body('instructions').optional().trim().notEmpty().withMessage('Instructions cannot be empty'),
+    body('isShared').optional().isBoolean().withMessage('isShared must be true or false'),
   ],
   validate,
   asyncHandler(controller.update)

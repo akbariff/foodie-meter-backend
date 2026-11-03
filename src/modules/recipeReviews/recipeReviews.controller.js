@@ -2,34 +2,81 @@ const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
 const { ok } = require('../../utils/respond');
 
-async function assertRecipeExists(recipeId) {
-  const recipe = await prisma.recipe.findUnique({ where: { id: recipeId } });
-  if (!recipe) {
-    throw new AppError(404, 'Recipe not found');
-  }
+async function assertReviewableRecipe(recipeId, userId) {
+  const recipe = await prisma.recipe.findUnique({
+      where: { id: recipeId,},
+    });
+    if (!recipe) {throw new AppError(404,'Recipe not found');}
+  if (
+    recipe.moderationStatus !== 'ACTIVE') 
+    { throw new AppError( 404, 'Recipe not found');}
+
+  // Private recipe:
+  // only its owner may access it.
+  if (!recipe.isShared && recipe.userId !== userId)
+    {throw new AppError(404, 'Recipe not found');}
+
   return recipe;
 }
 
 async function listForRecipe(req, res) {
   const { recipeId } = req.params;
-  await assertRecipeExists(recipeId);
+
+  const recipe = await assertReviewableRecipe(recipeId, req.user.id);
 
   const reviews = await prisma.recipeReview.findMany({
-    where: { recipeId },
-    orderBy: { createdAt: 'desc' },
+    where: {
+      recipeId,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 
+  const mappedReviews = reviews.map(review => ({
+    id: review.id,
+    userId: review.userId,
+    recipeId: review.recipeId,
+    rating: review.rating,
+    comment: review.comment,
+    createdAt: review.createdAt,
+    updatedAt: review.updatedAt,
+
+    author: review.user.name,
+
+    // Critical ownership flag
+    mine: review.userId === req.user.id,
+  }));
+
   const averageRating = reviews.length
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    ? reviews.reduce(
+        (sum, review) => sum + review.rating,
+        0
+      ) / reviews.length
     : null;
 
-  ok(res, { reviews, averageRating, count: reviews.length });
+  ok(res, {
+    recipe: {
+      id: recipe.id,
+      title: recipe.title,
+    },
+    reviews: mappedReviews,
+    averageRating,
+    count: reviews.length,
+  });
 }
 
 async function upsertMine(req, res) {
   const { recipeId } = req.params;
   const { rating, comment } = req.body;
-  await assertRecipeExists(recipeId);
+  await assertReviewableRecipe(recipeId, req.user.id);
 
   const review = await prisma.recipeReview.upsert({
     where: { userId_recipeId: { userId: req.user.id, recipeId } },
@@ -42,7 +89,7 @@ async function upsertMine(req, res) {
 
 async function removeMine(req, res) {
   const { recipeId } = req.params;
-  await assertRecipeExists(recipeId);
+  await assertReviewableRecipe(recipeId, req.user.id);
 
   const existing = await prisma.recipeReview.findUnique({
     where: { userId_recipeId: { userId: req.user.id, recipeId } },

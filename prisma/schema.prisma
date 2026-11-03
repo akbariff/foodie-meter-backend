@@ -167,6 +167,8 @@ model Recipe {
   createdAt                  DateTime               @default(now())
   updatedAt                  DateTime               @updatedAt
   moderationStatus           RecipeModerationStatus @default(ACTIVE)
+  isShared                   Boolean                @default(false)
+
   moderations                RecipeModeration[]
 
   reviews RecipeReview[]

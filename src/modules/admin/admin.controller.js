@@ -2,6 +2,7 @@ const authService = require('../auth/auth.service');
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
 const { ok } = require('../../utils/respond');
+const adminAnalyticsService = require('./admin.analytics.service');
 
 const USER_LIST_SELECT = {
   id: true,
@@ -146,10 +147,18 @@ async function removeUser(req, res) {
   res.status(204).send();
 }
 
+async function getAnalytics(req, res) {
+  const analytics =
+    await adminAnalyticsService.getSystemAnalytics();
+
+  ok(res, analytics);
+}
+
 module.exports = {
   listUsers,
   updateStatus,
   updateRole,
   sendPasswordReset,
   removeUser,
+  getAnalytics,
 };

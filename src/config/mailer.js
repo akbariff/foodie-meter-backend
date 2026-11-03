@@ -43,7 +43,10 @@ async function sendCodeEmail({ to, subject, label }, code) {
     const transporter = await getTransporter();
 
     const info = await transporter.sendMail({
-      from: env.smtp.from || 'Foodie Meter <no-reply@foodiemeter.dev>',
+      from: {
+        name: 'FoodieMeter',
+        address: env.smtp.from,
+      },
       to,
       subject,
       text: `Your ${label} code is ${code}. It expires in ${env.verificationCodeTtlMinutes} minutes.`,

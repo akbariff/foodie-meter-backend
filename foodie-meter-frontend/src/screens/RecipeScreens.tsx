@@ -1,13 +1,175 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import { Button, Card, Field, ScreenTitle, uiStyles } from '../components/UI';
 import { useApp } from '../context/AppContext';
 import { colors } from '../theme';
 import { Recipe } from '../types';
 
-export function RecipeDetailsScreen(){const {params,addDiaryEntry,navigate}=useApp(); const r:Recipe=params.recipe; if(!r)return null; const log=async()=>{try{await addDiaryEntry({name:r.title,calories:r.calories,protein:r.protein,carbs:r.carbs,fat:r.fat,mealType:r.mealType||'LUNCH'});Alert.alert('Meal logged',`${r.title} was added to your diary.`)}catch(error){Alert.alert('Could not log meal',String((error as Error).message))}}; return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title={r.title} subtitle={r.source || 'Recipe'} back/><View style={styles.nutrition}><Text style={styles.kcal}>{r.calories} kcal</Text><Text style={styles.nutText}>{r.protein}g protein • {r.carbs}g carbs • {r.fat}g fat</Text></View>{!!r.serving&&<Text style={uiStyles.muted}>Serving: {r.serving}</Text>}<Text style={styles.h}>Ingredients</Text>{r.ingredients.map((x,i)=><Text style={uiStyles.body} key={i}>• {x}</Text>)}<View style={uiStyles.divider}/><Text style={styles.h}>Instructions</Text>{r.instructions.map((x,i)=><Text style={uiStyles.body} key={i}>{i+1}. {x}</Text>)}<View style={uiStyles.divider}/><Text style={styles.h}>Dietary tags</Text><Text style={uiStyles.muted}>{r.tags.join(' • ')}</Text><Button title="Log this meal" onPress={()=>void log()}/><Button title="View recipe reviews" secondary onPress={()=>navigate('Reviews',{recipeTitle:r.title})}/></ScrollView>}
+export function RecipeDetailsScreen(){
+    const {params,addDiaryEntry,navigate}=useApp(); 
+    const r:Recipe=params.recipe; 
+    if(!r)return null; 
+    const log=async()=>{
+        try{await addDiaryEntry({
+            name:r.title,
+            calories:r.calories,
+            protein:r.protein,
+            carbs:r.carbs,
+            fat:r.fat,
+            mealType:r.mealType||'LUNCH'
+        });
+            Alert.alert('Meal logged',`${r.title} was added to your diary.`)
+        }catch(error){
+            Alert.alert('Could not log meal',
+                String((error as Error).message))}}; 
+                return <ScrollView style={uiStyles.screen} 
+                contentContainerStyle={uiStyles.scrollContent}>
+                    <ScreenTitle title={r.title} subtitle={r.source || 'Recipe'} back/>
+                    <View style={styles.nutrition}>
+                        <Text style={styles.kcal}>
+                            {r.calories} kcal
+                            </Text>
+                            <Text style={styles.nutText}>{r.protein}g protein • {r.carbs}g carbs • {r.fat}g fat
+                                </Text>
+                                </View>
+                                {!!r.serving&&<Text style={uiStyles.muted}>Serving: {r.serving}
+                                    </Text>
+                                    }
+                                    <Text style={styles.h}>Ingredients</Text>
+                                    {r.ingredients.map((x,i)=><Text style={uiStyles.body} key={i}>• {x}</Text>)}
+                                    <View style={uiStyles.divider}/>
+                                    <Text style={styles.h}>Instructions</Text>
+                                    {r.instructions.map((x,i)=><Text style={uiStyles.body} key={i}>{i+1}. {x}</Text>)}
+                                    <View style={uiStyles.divider}/>
+                                    <Text style={styles.h}>Dietary tags</Text>
+                                    <Text style={uiStyles.muted}>{r.tags.join(' • ')}</Text>
+                                    <Button title="Log this meal" onPress={()=>void log()}/>
+                                        {!r.mine || r.isShared ? (<Button title="View recipe reviews" secondary onPress={() => navigate('Reviews', {recipeId: r.id, recipeTitle: r.title,})}/>
+                                        ) : (
+                                        <Text style={uiStyles.muted}>
+                                            This recipe is private. Share it with the community
+                                            to enable community reviews.
+                                        </Text>
+                                        )}
+                                        </ScrollView>}
 
-export function MyRecipesScreen(){const {myRecipes,navigate,deleteRecipe}=useApp(); const del=(r:Recipe)=>Alert.alert('Delete recipe',`Delete ${r.title}?`,[{text:'Cancel'},{text:'Delete',style:'destructive',onPress:()=>deleteRecipe(r.id)}]); return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}><ScreenTitle title="My recipes" subtitle="Create, update, delete and share your own recipes" back/><Button title="＋ Create recipe" onPress={()=>navigate('RecipeEditor')}/>{myRecipes.map(r=><Card key={r.id}><Text style={styles.recipeName}>{r.title}</Text><Text style={uiStyles.muted}>{r.calories} kcal • {r.ingredients.length} ingredients</Text><View style={styles.actions}><Pressable onPress={()=>navigate('RecipeEditor',{recipe:r})}><Text style={styles.link}>Edit</Text></Pressable><Pressable onPress={()=>Share.share({message:`${r.title}\n${r.ingredients.join(', ')}\n${r.instructions.join(' ')}`})}><Text style={styles.link}>Share</Text></Pressable><Pressable onPress={()=>del(r)}><Text style={styles.danger}>Delete</Text></Pressable></View></Card>)}</ScrollView>}
+export function MyRecipesScreen(){
+    const {myRecipes,navigate,deleteRecipe}=useApp(); 
+    const del=(r:Recipe)=>Alert.alert('Delete recipe',`Delete ${r.title}?`,
+        [{text:'Cancel'},{text:'Delete',style:'destructive',onPress:()=>deleteRecipe(r.id)}]); 
+        return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent}>
+            <ScreenTitle title="My recipes" subtitle="Create, update, delete and share your own recipes" back/>
+            <Button title="＋ Create recipe" onPress={()=>navigate('RecipeEditor')}/>
+                {myRecipes.map(r=><Card key={r.id}><Text style={styles.recipeName}>{r.title}</Text>
+                    <Text style={uiStyles.muted}>{r.calories} kcal • {r.ingredients.length} ingredients</Text>
+                    <Text style ={r.isShared ? styles.shared: styles.private}>
+                        {r.isShared ? '● Shared with community' : '● Private'}</Text>
+                    <View style={styles.actions}><Pressable onPress={()=>navigate('RecipeEditor',{recipe:r})}>
+                        <Text style={styles.link}>Edit</Text></Pressable>
+                        <Pressable onPress={()=>Share.share({message:`${r.title}\n${r.ingredients.join(', ')}\n${r.instructions.join(' ')}`})}>
+                            <Text style={styles.link}>Share externally</Text></Pressable><Pressable onPress={()=>del(r)}>
+                                <Text style={styles.danger}>Delete</Text>
+                                </Pressable>
+                                </View>
+                                </Card>)}
+                                </ScrollView>
+                                }
 
-export function RecipeEditorScreen(){const {params,saveRecipe,goBack}=useApp(); const existing:Recipe|undefined=params.recipe; const [title,setTitle]=useState(existing?.title||''); const [cal,setCal]=useState(String(existing?.calories||'')); const [ingredients,setIngredients]=useState(existing?.ingredients.join('\n')||''); const [instructions,setInstructions]=useState(existing?.instructions.join('\n')||''); return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent} keyboardShouldPersistTaps="handled"><ScreenTitle title={existing?'Update recipe':'Create recipe'} subtitle="Your personal recipe" back/><Field label="Recipe title" value={title} onChangeText={setTitle}/><Field label="Calories per serving" keyboardType="numeric" value={cal} onChangeText={setCal}/><Field label="Ingredients (one per line)" multiline value={ingredients} onChangeText={setIngredients}/><Field label="Instructions (one step per line)" multiline value={instructions} onChangeText={setInstructions}/><Button title="Save recipe" onPress={()=>{if(!title||!ingredients||!instructions)return Alert.alert('Missing details','Complete all required fields.');saveRecipe({id:existing?.id,title,calories:Number(cal)||0,protein:0,carbs:0,fat:0,ingredients:ingredients.split('\n').filter(Boolean),instructions:instructions.split('\n').filter(Boolean),tags:['User recipe']});Alert.alert('Saved','Recipe saved successfully.',[{text:'OK',onPress:goBack}])}}/></ScrollView>}
-const styles=StyleSheet.create({nutrition:{backgroundColor:colors.primary,borderRadius:16,padding:20,marginBottom:22},kcal:{fontSize:26,fontWeight:'900',color:'white'},nutText:{color:'white',marginTop:5},h:{fontWeight:'800',fontSize:15,color:colors.text,marginBottom:8},recipeName:{fontWeight:'800',fontSize:16,color:colors.text},actions:{flexDirection:'row',gap:20,marginTop:14},link:{color:colors.primaryDark,fontWeight:'700'},danger:{color:colors.danger,fontWeight:'700'}});
+export function RecipeEditorScreen(){
+    const {params,saveRecipe,goBack}=useApp(); 
+    const existing:Recipe|undefined=params.recipe; 
+    const [title,setTitle]=useState(existing?.title||''); 
+    const [cal,setCal]=useState(String(existing?.calories||'')); 
+    const [ingredients,setIngredients]=useState(existing?.ingredients.join('\n')||''); 
+    const [instructions,setInstructions]=useState(existing?.instructions.join('\n')||''); 
+    const [isShared, setIsShared] = useState(existing?.isShared ?? false);
+    return <ScrollView style={uiStyles.screen} contentContainerStyle={uiStyles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScreenTitle title={existing?'Update recipe':'Create recipe'} subtitle="Your personal recipe" back/>
+        <Field label="Recipe title" value={title} onChangeText={setTitle}/>
+        <Field label="Calories per serving" keyboardType="numeric" value={cal} onChangeText={setCal}/>
+        <Field label="Ingredients (one per line)" multiline value={ingredients} onChangeText={setIngredients}/>
+        <Field label="Instructions (one step per line)" multiline value={instructions} onChangeText={setInstructions}/>
+        <Card>
+            <View style={styles.shareRow}>
+            <View style={styles.shareInfo}>
+            <Text style={styles.recipeName}>
+                Share with community
+            </Text>
+
+            <Text style={uiStyles.muted}>
+                {isShared
+                ? 'Other FoodieMeter users can discover and review this recipe.'
+                : 'Only you can access this recipe.'}
+            </Text>
+            </View>
+
+            <Switch
+            value={isShared}
+            onValueChange={setIsShared}
+            />
+        </View>
+        </Card>
+        <Button title="Save recipe" onPress={async () => {
+            if (
+                !title ||
+                !ingredients ||
+                !instructions
+            ) {
+                return Alert.alert(
+                'Missing details',
+                'Complete all required fields.'
+                );
+            }
+
+            try {
+                await saveRecipe({
+                id: existing?.id,
+                title,
+                calories: Number(cal) || 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+
+                ingredients: ingredients
+                    .split('\n')
+                    .filter(Boolean),
+
+                instructions: instructions
+                    .split('\n')
+                    .filter(Boolean),
+
+                tags: ['User recipe'],
+                isShared,
+                });
+
+                Alert.alert(
+                'Saved',
+                'Recipe saved successfully.',
+                [
+                    {
+                    text: 'OK',
+                    onPress: goBack,
+                    },
+                ]
+                );
+            } catch (error) {
+                Alert.alert(
+                'Save failed',
+                (error as Error).message
+                );
+            }
+        }}/></ScrollView>}
+const styles=StyleSheet.create({
+    nutrition:{backgroundColor:colors.primary,borderRadius:16,padding:20,marginBottom:22},
+    kcal:{fontSize:26,fontWeight:'900',color:'white'},
+    nutText:{color:'white',marginTop:5},
+    h:{fontWeight:'800',fontSize:15,color:colors.text,marginBottom:8},
+    recipeName:{fontWeight:'800',fontSize:16,color:colors.text},
+    actions:{flexDirection:'row',gap:20,marginTop:14},
+    link:{color:colors.primaryDark,fontWeight:'700'},
+    danger:{color:colors.danger,fontWeight:'700'},
+    shareRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',gap: 16,},
+    shareInfo: {flex: 1,},
+    shared: {color: colors.success, fontWeight: '700', marginTop: 6,},
+    private: {color: colors.muted, fontWeight: '700', marginTop: 6,},
+});

@@ -37,9 +37,15 @@ export type Recipe = {
   instructions: string[];
   tags: string[];
   source?: string;
-  mealType?: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+  mealType?:
+    | 'BREAKFAST'
+    | 'LUNCH'
+    | 'DINNER'
+    | 'SNACK';
   serving?: string;
   mine?: boolean;
+
+  isShared?: boolean;
 };
 
 export type Review = {

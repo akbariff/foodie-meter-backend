@@ -139,4 +139,22 @@ router.delete(
   asyncHandler(controller.removeUser)
 );
 
+/**
+ * @openapi
+ * /api/admin/analytics:
+ *   get:
+ *     tags: [Admin]
+ *     summary: View system-wide analytics and reports
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: System analytics
+ *       403:
+ *         description: Admin role required
+ */
+router.get(
+  '/analytics',
+  asyncHandler(controller.getAnalytics)
+);
+
 module.exports = router;

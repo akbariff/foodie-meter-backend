@@ -171,6 +171,80 @@ describe('Admin user management', () => {
       expect.any(String)
     );
   });
+  test('non-admin cannot view system analytics', async () => {
+  const res = await request(app)
+    .get('/api/admin/analytics')
+    .set(
+      'Authorization',
+      `Bearer ${targetToken}`
+    );
+
+  expect(res.status).toBe(403);
+  expect(res.body.error.code).toBe(
+    'FORBIDDEN_ROLE'
+  );
+});
+
+test('admin can view system-wide analytics', async () => {
+  const res = await request(app)
+    .get('/api/admin/analytics')
+    .set(
+      'Authorization',
+      `Bearer ${adminToken}`
+    );
+
+  expect(res.status).toBe(200);
+
+  expect(res.body.data).toEqual(
+    expect.objectContaining({
+      generatedAt: expect.any(String),
+
+      accounts: expect.objectContaining({
+        total: expect.any(Number),
+        active: expect.any(Number),
+        suspended: expect.any(Number),
+
+        byRole: expect.objectContaining({
+          USER: expect.any(Number),
+          NUTRITIONIST: expect.any(Number),
+          ADMIN: expect.any(Number),
+        }),
+
+        byTier: expect.objectContaining({
+          FREE: expect.any(Number),
+          PREMIUM: expect.any(Number),
+        }),
+      }),
+
+      subscription: expect.objectContaining({
+        premiumUsers: expect.any(Number),
+        conversionRate: expect.any(Number),
+      }),
+
+      engagement: expect.objectContaining({
+        activeUsers7d: expect.any(Number),
+        activeUsers30d: expect.any(Number),
+        engagementRate30d: expect.any(Number),
+        retentionProxyRate30d:
+          expect.any(Number),
+      }),
+
+      growth: expect.any(Array),
+
+      featureUsage30d:
+        expect.any(Array),
+    })
+  );
+
+  expect(
+    res.body.data.growth
+  ).toHaveLength(6);
+
+  expect(
+    res.body.data.accounts.byRole.ADMIN
+  ).toBeGreaterThanOrEqual(1);
+});
+  
   test('admin can remove another non-admin account', async () => {
   const res = await request(app)
       .delete(`/api/admin/users/${targetId}`)

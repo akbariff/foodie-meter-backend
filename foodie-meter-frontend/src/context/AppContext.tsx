@@ -2,7 +2,8 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { DiaryEntry, Goal, Recipe, Review, ScreenName } from '../types';
 import { recommendedMeals, starterReviews } from '../data/mock';
-import { api, setAccessToken, DietaryPreference, BackendDiaryEntry, MealType } from '../services/api';
+import { api, setAccessToken, DietaryPreference, BackendDiaryEntry, BackendRecipe, MealType } from '../services/api';
+
 
 type User = {
   id: string;
@@ -42,8 +43,8 @@ type AppContextValue = {
   setWater: (value: number) => void;
   recommendations: Recipe[];
   myRecipes: Recipe[];
-  saveRecipe: (recipe: Omit<Recipe, 'id' | 'mine'> & { id?: string }) => void;
-  deleteRecipe: (id: string) => void;
+  saveRecipe: (recipe: Omit<Recipe, 'id' | 'mine'> & { id?: string;}) => Promise<void>;
+  deleteRecipe: ( id: string) => Promise<void>;
   reviews: Review[];
   saveReview: (recipeTitle: string, rating: number, comment: string, id?: string) => void;
   deleteReview: (id: string) => void;
@@ -58,6 +59,31 @@ const AppContext = createContext<AppContextValue | null>(null);
 const fromBackendDiary = (entry: BackendDiaryEntry): DiaryEntry => ({
   id: entry.id, name: entry.foodName, mealType: entry.mealType, calories: entry.calories, createdAt: entry.consumedAt,
 });
+const fromBackendRecipe = (
+  recipe: BackendRecipe): Recipe => ({
+  id: recipe.id,
+  title: recipe.title,
+
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0,
+
+  ingredients: recipe.ingredients
+    .split(/\n|,/)
+    .map(item => item.trim())
+    .filter(Boolean),
+
+  instructions: recipe.instructions
+    .split('\n')
+    .map(item => item.trim())
+    .filter(Boolean),
+
+  tags: ['User recipe'],
+  source: 'Community recipe',
+  mine: true,
+  isShared: recipe.isShared,
+});
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -68,9 +94,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [hasCalorieGoal, setHasCalorieGoal] = useState(false);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [water, setWater] = useState(2);
-  const [myRecipes, setMyRecipes] = useState<Recipe[]>([
-    { id: 'm1', title: 'My overnight oats', calories: 390, protein: 22, carbs: 58, fat: 9, ingredients: ['Oats', 'Milk', 'Greek yogurt', 'Berries'], instructions: ['Mix ingredients.', 'Chill overnight.'], tags: ['Breakfast'], mine: true }
-  ]);
+  const [myRecipes, setMyRecipes] = useState<Recipe[]>([]);
   const [reviews, setReviews] = useState<Review[]>(starterReviews);
   const [subscription, setSubscription] = useState<Subscription>(() => {
     const next = new Date();
@@ -113,10 +137,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       catch { setHasCalorieGoal(false); }
       const entries = await api.getDiary(new Date().toISOString().slice(0, 10));
       setDiary(entries.map(fromBackendDiary));
+      const backendRecipes =
+      await api.getMyRecipes();
+      setMyRecipes(backendRecipes.map(fromBackendRecipe));
       setHistory([]); setRoute('Home'); setParams({});
     } catch (error) { setAccessToken(null); setUser(null); setDiary([]); throw error; }
+    
   };
-  const logout = () => { setAccessToken(null); setUser(null); setDiary([]); setHasCalorieGoal(false); setHistory([]); setRoute('Login'); setParams({}); };
+  const logout = () => { setAccessToken(null); setUser(null); setDiary([]); setHasCalorieGoal(false); setHistory([]); setRoute('Login'); setParams({}); setMyRecipes([]); };
   const saveGoal = async (nextGoal: Goal) => { await api.saveGoal(nextGoal.calories); setGoal(nextGoal); setHasCalorieGoal(true); };
   const addDiaryEntry = async (entry: Omit<DiaryEntry, 'id' | 'createdAt'>) => {
     const type = entry.mealType.toUpperCase();
@@ -126,11 +154,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
   const removeDiaryEntry = async (id: string) => { await api.deleteDiaryEntry(id); setDiary(d => d.filter(x => x.id !== id)); };
   const consumed = useMemo(() => diary.reduce((sum, item) => sum + Number(item.calories || 0), 0), [diary]);
-  const saveRecipe = (recipe: Omit<Recipe, 'id' | 'mine'> & { id?: string }) => {
-    if (recipe.id) setMyRecipes(r => r.map(x => x.id === recipe.id ? { ...recipe, id: recipe.id!, mine: true } : x));
-    else setMyRecipes(r => [{ ...recipe, id: String(Date.now()), mine: true }, ...r]);
+  const saveRecipe = async (
+    recipe: Omit<Recipe, 'id' | 'mine'> & {
+      id?: string;
+    }
+  ) => {
+    const payload = {
+      title: recipe.title,
+
+      ingredients:
+        recipe.ingredients.join('\n'),
+
+      instructions:
+        recipe.instructions.join('\n'),
+
+      isShared:
+      recipe.isShared ?? false,
+    };
+
+    if (recipe.id) {
+      const saved =
+        await api.updateRecipe(
+          recipe.id,
+          payload
+        );
+
+      setMyRecipes(current =>
+        current.map(item =>
+          item.id === saved.id
+            ? fromBackendRecipe(saved)
+            : item
+        )
+      );
+
+      return;
+    }
+
+    const saved =
+      await api.createRecipe(payload);
+
+    setMyRecipes(current => [
+      fromBackendRecipe(saved),
+      ...current,
+    ]);
   };
-  const deleteRecipe = (id: string) => setMyRecipes(r => r.filter(x => x.id !== id));
+  const deleteRecipe = async (
+    id: string
+  ) => {
+    await api.deleteRecipe(id);
+
+    setMyRecipes(current =>
+      current.filter(
+        recipe => recipe.id !== id
+      )
+    );
+  };
   const saveReview = (
     recipeTitle: string,
     rating: number,

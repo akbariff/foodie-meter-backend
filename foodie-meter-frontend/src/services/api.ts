@@ -123,6 +123,65 @@ export type NutritionistApplication = {
   createdAt: string;
 };
 
+export type BackendRecipe = {
+  id: string;
+  title: string;
+  ingredients: string;
+  instructions: string;
+  sourceNutritionistRecipeId?:
+    | string
+    | null;
+  moderationStatus:
+    | 'ACTIVE'
+    | 'FLAGGED'
+    | 'REMOVED';
+
+  isShared: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicRecipe = {
+  id: string;
+  title: string;
+  ingredients: string;
+  instructions: string;
+
+  isShared: boolean;
+
+  moderationStatus:
+    | 'ACTIVE'
+    | 'FLAGGED'
+    | 'REMOVED';
+
+  createdAt: string;
+  ownerId: string;
+  ownerName: string;
+};
+
+export type BackendRecipeReview = {
+  id: string;
+  userId: string;
+  recipeId: string;
+  rating: number;
+  comment: string;
+  author: string;
+  mine: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RecipeReviewData = {
+  recipe: {
+    id: string;
+    title: string;
+  };
+  reviews: BackendRecipeReview[];
+  averageRating: number | null;
+  count: number;
+};
+
 let accessToken: string | null = null;
 export const setAccessToken = (token: string | null) => { accessToken = token; };
 
@@ -237,6 +296,74 @@ rejectNutritionistApplication: (
 deleteAdminUser: (id: string) =>
   request<void>(
     `/admin/users/${id}`,
+    {
+      method: 'DELETE',
+    }
+  ),
+
+  getMyRecipes: () =>
+  request<BackendRecipe[]>('/recipes'),
+
+getPublicRecipes: () =>
+  request<PublicRecipe[]>('/recipes/public'),
+
+createRecipe: (payload: {
+  title: string;
+  ingredients: string;
+  instructions: string;
+  isShared: boolean;
+}) =>
+  request<BackendRecipe>('/recipes', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+
+updateRecipe: (
+  id: string,
+  payload: {
+    title?: string;
+    ingredients?: string;
+    instructions?: string;
+    isShared?: boolean;
+  }
+) =>
+  request<BackendRecipe>(
+    `/recipes/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }
+  ),
+
+deleteRecipe: (id: string) =>
+  request<void>(`/recipes/${id}`, {
+    method: 'DELETE',
+  }),
+
+  getRecipeReviews: (recipeId: string) =>
+  request<RecipeReviewData>(
+    `/recipe-reviews/${recipeId}`
+  ),
+
+saveMyRecipeReview: (
+  recipeId: string,
+  rating: number,
+  comment: string
+) =>
+  request<BackendRecipeReview>(
+    `/recipe-reviews/${recipeId}/me`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        rating,
+        comment,
+      }),
+    }
+  ),
+
+deleteMyRecipeReview: (recipeId: string) =>
+  request<void>(
+    `/recipe-reviews/${recipeId}/me`,
     {
       method: 'DELETE',
     }

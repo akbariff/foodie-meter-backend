@@ -10,12 +10,30 @@ async function assertOwnedRecipe(id, userId) {
   return recipe;
 }
 
-async function create(req, res) {
-  const { title, ingredients, instructions } = req.body;
-  const recipe = await prisma.recipe.create({
-    data: { userId: req.user.id, title, ingredients, instructions },
+async function update(req, res) {await assertOwnedRecipe(req.params.id, req.user.id);
+  const {title, ingredients, instructions, isShared,} = req.body;
+  const recipe = await prisma.recipe.update({
+    where: { id: req.params.id,},
+    data: {
+      ...(title !== undefined
+        ? { title }
+        : {}),
+
+      ...(ingredients !== undefined
+        ? { ingredients }
+        : {}),
+
+      ...(instructions !== undefined
+        ? { instructions }
+        : {}),
+
+      ...(isShared !== undefined
+        ? { isShared }
+        : {}),
+    },
   });
-  created(res, recipe);
+
+  ok(res, recipe);
 }
 
 async function list(req, res) {
@@ -70,4 +88,44 @@ async function addFromNutritionistRecipe(req, res) {
   created(res, recipe);
 }
 
-module.exports = { create, list, getById, update, remove, addFromNutritionistRecipe };
+async function listPublic(req, res) {
+  const recipes = await prisma.recipe.findMany({
+    where: {
+      moderationStatus: 'ACTIVE',
+      isShared: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    select: {
+      id: true,
+      title: true,
+      ingredients: true,
+      instructions: true,
+      moderationStatus: true,
+      createdAt: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  ok(
+    res,
+    recipes.map(recipe => ({
+      id: recipe.id,
+      title: recipe.title,
+      ingredients: recipe.ingredients,
+      instructions: recipe.instructions,
+      moderationStatus: recipe.moderationStatus,
+      createdAt: recipe.createdAt,
+      ownerId: recipe.user.id,
+      ownerName: recipe.user.name,
+    }))
+  );
+}
+
+module.exports = { create, list, listPublic, getById, update, remove, addFromNutritionistRecipe };
