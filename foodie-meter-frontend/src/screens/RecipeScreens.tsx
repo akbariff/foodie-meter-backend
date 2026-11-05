@@ -110,19 +110,9 @@ export function RecipeEditorScreen(){
         </View>
         </Card>
         <Button title="Save recipe" onPress={async () => {
-            if (
-                !title ||
-                !ingredients ||
-                !instructions
-            ) {
-                return Alert.alert(
-                'Missing details',
-                'Complete all required fields.'
-                );
-            }
-
-            try {
-                await saveRecipe({
+            if (!title || !ingredients ||!instructions) 
+                {return Alert.alert('Missing details', 'Complete all required fields.');}
+            try { await saveRecipe({
                 id: existing?.id,
                 title,
                 calories: Number(cal) || 0,
@@ -130,46 +120,26 @@ export function RecipeEditorScreen(){
                 carbs: 0,
                 fat: 0,
 
-                ingredients: ingredients
-                    .split('\n')
-                    .filter(Boolean),
+                ingredients: ingredients.split('\n').filter(Boolean),
+                instructions: instructions.split('\n').filter(Boolean),
+                tags: ['User recipe'],isShared,});
 
-                instructions: instructions
-                    .split('\n')
-                    .filter(Boolean),
-
-                tags: ['User recipe'],
-                isShared,
-                });
-
-                Alert.alert(
-                'Saved',
-                'Recipe saved successfully.',
-                [
-                    {
-                    text: 'OK',
-                    onPress: goBack,
-                    },
-                ]
-                );
-            } catch (error) {
-                Alert.alert(
-                'Save failed',
-                (error as Error).message
-                );
-            }
-        }}/></ScrollView>}
-const styles=StyleSheet.create({
-    nutrition:{backgroundColor:colors.primary,borderRadius:16,padding:20,marginBottom:22},
-    kcal:{fontSize:26,fontWeight:'900',color:'white'},
-    nutText:{color:'white',marginTop:5},
-    h:{fontWeight:'800',fontSize:15,color:colors.text,marginBottom:8},
-    recipeName:{fontWeight:'800',fontSize:16,color:colors.text},
-    actions:{flexDirection:'row',gap:20,marginTop:14},
-    link:{color:colors.primaryDark,fontWeight:'700'},
-    danger:{color:colors.danger,fontWeight:'700'},
-    shareRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',gap: 16,},
-    shareInfo: {flex: 1,},
-    shared: {color: colors.success, fontWeight: '700', marginTop: 6,},
-    private: {color: colors.muted, fontWeight: '700', marginTop: 6,},
-});
+                Alert.alert('Saved', 'Recipe saved successfully.',
+                [{text: 'OK',onPress: goBack,},]);} 
+                catch (error) {Alert.alert('Save failed',
+                    (error as Error).message);}}}/>
+                    </ScrollView>}
+                    const styles=StyleSheet.create({
+                        nutrition:{backgroundColor:colors.primary,borderRadius:16,padding:20,marginBottom:22},
+                        kcal:{fontSize:26,fontWeight:'900',color:'white'},
+                        nutText:{color:'white',marginTop:5},
+                        h:{fontWeight:'800',fontSize:15,color:colors.text,marginBottom:8},
+                        recipeName:{fontWeight:'800',fontSize:16,color:colors.text},
+                        actions:{flexDirection:'row',gap:20,marginTop:14},
+                        link:{color:colors.primaryDark,fontWeight:'700'},
+                        danger:{color:colors.danger,fontWeight:'700'},
+                        shareRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',gap: 16,},
+                        shareInfo: {flex: 1,},
+                        shared: {color: colors.success, fontWeight: '700', marginTop: 6,},
+                        private: {color: colors.muted, fontWeight: '700', marginTop: 6,},
+                    });

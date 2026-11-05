@@ -32,6 +32,7 @@ let ownerToken;
 let reviewerAToken;
 let reviewerBToken;
 let recipeId;
+let privateRecipeId;
 
 function lastCodeSentTo(email) {
   const call = mailer.sendVerificationEmail.mock.calls
@@ -79,7 +80,29 @@ beforeAll(async () => {
 
   expect(createRecipe.status).toBe(201);
   recipeId = createRecipe.body.data.id;
-});
+  const privateRecipe =
+  await request(app)
+    .post('/api/recipes')
+    .set(
+      'Authorization',
+      `Bearer ${ownerToken}`
+    )
+    .send({
+      title:
+        `Private Recipe ${runId}`,
+
+      ingredients:
+        'Secret ingredients',
+
+      instructions:
+        'Secret instructions',
+
+      isShared: false,
+    });
+    expect(privateRecipe.status).toBe(201);
+    expect(privateRecipe.body.data.isShared).toBe(false);
+    privateRecipeId =privateRecipe.body.data.id;
+  });
 
 afterAll(async () => {
   await prisma.user.deleteMany({
@@ -203,4 +226,37 @@ describe('RecipeReview API', () => {
 
     expect(res.status).toBe(404);
   });
+
+  test('private recipe is not available in the public recipe list',
+    async () => {const res =await request(app)
+      .get('/api/recipes/public')
+      .set('Authorization',`Bearer ${reviewerAToken}`);
+      expect(res.status).toBe(200);
+
+      expect(res.body.data.some(recipe =>recipe.id === recipeId)).toBe(true);
+      expect(res.body.data.some(recipe =>recipe.id === privateRecipeId)).toBe(false);
+      }
+    );
+
+  test('another user cannot view reviews for a private recipe',
+    async () => {const res = await request(app)
+      .get(`/api/recipe-reviews/${privateRecipeId}`)
+      .set('Authorization',`Bearer ${reviewerAToken}`);
+      expect(res.status).toBe(404);
+    });
+
+  test('another user cannot review a private recipe',
+  async () => {const res = await request(app)
+    .put(`/api/recipe-reviews/${privateRecipeId}/me`)
+    .set('Authorization', `Bearer ${reviewerAToken}`)
+    .send({rating: 5, comment:'This should not be allowed.',});
+    expect(res.status).toBe(404);
+  });
+
+  test('owner can still access reviews for their own private recipe',
+  async () => {const res = await request(app)
+     .get(`/api/recipe-reviews/${privateRecipeId}`)
+     .set('Authorization',`Bearer ${ownerToken}`);
+     expect(res.status).toBe(200);
+    });
 });

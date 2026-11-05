@@ -26,6 +26,8 @@ let adminToken;
 let adminId;
 let targetToken;
 let targetId;
+let reviewRecipeId;
+let targetReviewId;
 
 function lastCodeSentTo(email) {
   const call = mailer.sendVerificationEmail.mock.calls
@@ -69,6 +71,26 @@ beforeAll(async () => {
   const targetAccount = await signupAndVerify(target);
   targetToken = targetAccount.token;
   targetId = targetAccount.userId;
+
+  const recipe =await request(app).post('/api/recipes').set('Authorization',`Bearer ${targetToken}`).send(
+    {
+      title:`Admin Review Recipe ${runId}`,
+      ingredients:'Chicken, rice, vegetables',
+      instructions:'Cook and serve.',
+      isShared: true,
+    });
+
+expect(recipe.status).toBe(201);
+
+reviewRecipeId = recipe.body.data.id;
+
+
+const review = await request(app)
+    .put( `/api/recipe-reviews/${reviewRecipeId}/me`)
+    .set('Authorization',`Bearer ${targetToken}`)
+    .send({rating: 4,comment:'Original review for admin testing.',});
+    expect(review.status).toBe(200);
+    targetReviewId =review.body.data.id;
 });
 
 afterAll(async () => {
@@ -245,6 +267,55 @@ test('admin can view system-wide analytics', async () => {
   ).toBeGreaterThanOrEqual(1);
 });
   
+test('non-admin cannot access admin review management',
+  async () => {const res =await request(app)
+    .get('/api/admin/reviews')
+    .set('Authorization',`Bearer ${targetToken}`);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN_ROLE');
+  }
+);
+
+test('admin can list reviews',
+  async () => {const res = await request(app)
+        .get('/api/admin/reviews')
+        .set(
+          'Authorization',
+          `Bearer ${adminToken}`
+        );
+
+    expect(res.status).toBe(200);
+
+    const review =
+      res.body.data.find( item =>item.id === targetReviewId);
+
+    expect(review).toBeDefined();
+
+    expect(review.recipe.title).toContain(
+      'Admin Review Recipe'
+    );
+
+    expect(
+      review.user.email
+    ).toBe(target.email);
+  }
+);
+
+test(
+  'admin can update another users review',
+  async () => {
+    const res =
+      await request(app)
+      .patch(`/api/admin/reviews/${targetReviewId}`)
+      .set('Authorization',`Bearer ${adminToken}`)
+      .send({rating: 5,comment:'Review content updated by administrator.',});
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.rating).toBe(5);
+    expect(res.body.data.comment).toBe('Review content updated by administrator.');
+  }
+);
+
   test('admin can remove another non-admin account', async () => {
   const res = await request(app)
       .delete(`/api/admin/users/${targetId}`)

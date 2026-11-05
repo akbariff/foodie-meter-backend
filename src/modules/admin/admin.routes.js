@@ -157,4 +157,102 @@ router.get(
   asyncHandler(controller.getAnalytics)
 );
 
+
+// ADMIN REVIEW MANAGEMENT
+
+router.get(
+  '/reviews',
+  [
+    query('search')
+      .optional()
+      .isString()
+      .trim(),
+  ],
+  validate,
+  asyncHandler(controller.listReviews)
+);
+
+
+router.post(
+  '/reviews',
+  [
+    body('recipeId')
+      .isUUID()
+      .withMessage(
+        'Invalid recipe id'
+      ),
+
+    body('rating')
+      .isInt({
+        min: 1,
+        max: 5,
+      })
+      .withMessage(
+        'rating must be an integer between 1 and 5'
+      ),
+
+    body('comment')
+      .trim()
+      .notEmpty()
+      .isLength({
+        max: 1000,
+      })
+      .withMessage(
+        'comment is required and must be at most 1000 characters'
+      ),
+  ],
+  validate,
+  asyncHandler(controller.createReview)
+);
+
+
+router.patch(
+  '/reviews/:id',
+  [
+    param('id')
+      .isUUID()
+      .withMessage(
+        'Invalid review id'
+      ),
+
+    body('rating')
+      .optional()
+      .isInt({
+        min: 1,
+        max: 5,
+      })
+      .withMessage(
+        'rating must be an integer between 1 and 5'
+      ),
+
+    body('comment')
+      .optional()
+      .trim()
+      .notEmpty()
+      .isLength({
+        max: 1000,
+      })
+      .withMessage(
+        'comment must be at most 1000 characters'
+      ),
+  ],
+  validate,
+  asyncHandler(controller.updateReview)
+);
+
+
+router.delete(
+  '/reviews/:id',
+  [
+    param('id')
+      .isUUID()
+      .withMessage(
+        'Invalid review id'
+      ),
+  ],
+  validate,
+  asyncHandler(controller.deleteReview)
+);
+
+
 module.exports = router;

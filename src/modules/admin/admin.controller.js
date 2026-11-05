@@ -154,6 +154,197 @@ async function getAnalytics(req, res) {
   ok(res, analytics);
 }
 
+async function listReviews(req, res) {
+  const { search } = req.query;
+
+  const reviews = await prisma.recipeReview.findMany({
+      where: search ? { OR: [
+              {comment: { contains: search, mode: 'insensitive',},},
+              { user: {
+                name: {contains: search, mode: 'insensitive',},
+                },
+              },
+              { user: {
+                email: {contains: search,mode: 'insensitive',},
+                },
+              },
+              {
+                recipe: { title: { contains: search,mode: 'insensitive',},},
+              },
+            ],
+          }
+        : {},
+
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+
+        recipe: {
+          select: {
+            id: true,
+            title: true,
+            isShared: true,
+            moderationStatus: true,
+          },
+        },
+      },
+
+      orderBy: {createdAt: 'desc',},
+    });
+
+  ok(res, reviews);
+}
+
+
+async function createReview(req, res) {
+  const {
+    recipeId,
+    rating,
+    comment,
+  } = req.body;
+
+  const recipe =
+    await prisma.recipe.findUnique({
+      where: {id: recipeId,},
+    });
+
+  if (
+    !recipe ||
+    !recipe.isShared ||
+    recipe.moderationStatus !== 'ACTIVE'
+  ) 
+  {
+    throw new AppError( 404,'Shared recipe not found');
+  }
+
+  const review =
+    await prisma.recipeReview.upsert({
+      where: {
+        userId_recipeId: {
+          userId: req.user.id,
+          recipeId,
+        },
+      },
+
+      update: {rating, comment,},
+      create: {
+        userId: req.user.id,
+        recipeId,
+        rating,
+        comment,
+      },
+
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+
+        recipe: {
+          select: {
+            id: true,
+            title: true,
+            isShared: true,
+          },
+        },
+      },
+    });
+
+  ok(res, review);
+}
+
+
+async function updateReview(req, res) {
+  const { id } = req.params;
+  const { rating, comment } = req.body;
+
+  const existing =
+    await prisma.recipeReview.findUnique({
+      where: {
+        id,
+      },
+    });
+
+  if (!existing) {
+    throw new AppError(
+      404,
+      'Review not found'
+    );
+  }
+
+  const review =
+    await prisma.recipeReview.update({
+      where: {
+        id,
+      },
+
+      data: {
+        ...(rating !== undefined
+          ? { rating }
+          : {}),
+
+        ...(comment !== undefined
+          ? { comment }
+          : {}),
+      },
+
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+
+        recipe: {
+          select: {
+            id: true,
+            title: true,
+            isShared: true,
+          },
+        },
+      },
+    });
+
+  ok(res, review);
+}
+
+
+async function deleteReview(req, res) {
+  const { id } = req.params;
+
+  const existing =
+    await prisma.recipeReview.findUnique({
+      where: {
+        id,
+      },
+    });
+
+  if (!existing) {
+    throw new AppError(
+      404,
+      'Review not found'
+    );
+  }
+
+  await prisma.recipeReview.delete({
+    where: {
+      id,
+    },
+  });
+
+  res.status(204).send();
+}
+
 module.exports = {
   listUsers,
   updateStatus,
@@ -161,4 +352,9 @@ module.exports = {
   sendPasswordReset,
   removeUser,
   getAnalytics,
+
+  listReviews,
+  createReview,
+  updateReview,
+  deleteReview,
 };

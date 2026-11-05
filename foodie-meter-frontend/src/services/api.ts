@@ -201,6 +201,7 @@ export const api = {
   verifyEmail: (email: string, code: string) => request<{ token: string }>('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email, code }) }),
   forgotPassword: (email: string) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   resetPassword: (email: string, code: string, newPassword: string) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email, code, newPassword }) }),
+  changePassword: (currentPassword: string,newPassword: string) =>request<void>('/auth/change-password',{method: 'PUT',body: JSON.stringify({currentPassword,newPassword,}),}),
   getProfile: () => request<ApiUser>('/users/me'),
   updateProfile: (payload: Partial<Pick<ApiUser, 'name' | 'dietaryPreference' | 'excludedIngredients'>>) => request<ApiUser>('/users/me', { method: 'PUT', body: JSON.stringify(payload) }),
   getGoal: () => request<{ targetCalories: number }>('/calorie-goal'),
