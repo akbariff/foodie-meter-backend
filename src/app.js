@@ -24,6 +24,7 @@ const nutritionContentsRoutes = require('./modules/nutritionContent/content.rout
 const recipeModerationRoutes = require('./modules/recipeModeration/recipeModeration.routes');
 const weightLogRoutes = require('./modules/weightLog/weightLog.routes');
 const analyticsRoutes = require('./modules/analytics/analytics.routes');
+const siteInfoRoutes = require('./modules/siteInfo/siteInfo.routes');
 
 const app = express();
 
@@ -54,6 +55,8 @@ app.use('/api/nutrition-contents', nutritionContentsRoutes);
 app.use('/api/recipe-moderation', recipeModerationRoutes);
 app.use('/api/weight-log', weightLogRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/site-info', siteInfoRoutes);
+
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -193,6 +193,66 @@ describe('Admin user management', () => {
       expect.any(String)
     );
   });
+
+  test('website information is publicly readable',
+  async () => {
+    const res =await request(app).get('/api/site-info');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(expect.objectContaining({
+        id: 'main',
+        siteName: expect.any(String),
+        heroHeadingPrimary: expect.any(String),
+        heroHeadingAccent: expect.any(String),
+        heroDescription: expect.any(String),
+        aboutHeading: expect.any(String),
+        aboutDescription: expect.any(String),
+        ctaHeading: expect.any(String),
+        footerTagline: expect.any(String),
+      })
+    );
+  }
+);
+
+test('non-admin cannot update website information',
+  async () => {
+    const res = await request(app)
+        .put('/api/site-info')
+        .set('Authorization',`Bearer ${targetToken}`)
+        .send({siteName: 'Not Allowed',});
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN_ROLE');
+  }
+);
+
+test('admin can update website information',
+  async () => {
+    const res = await request(app)
+        .put('/api/site-info')
+        .set('Authorization',`Bearer ${adminToken}`)
+        .send({siteName: 'FoodieMeter',
+          heroHeadingPrimary:'Eat good.',
+          heroHeadingAccent:'Feel good.',
+          aboutHeading:'Better awareness, one meal at a time.',
+          footerTagline:'Eat good, feel good.',
+        });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.siteName).toBe('FoodieMeter');
+    expect(res.body.data.heroHeadingPrimary).toBe('Eat good.');
+    expect(res.body.data.footerTagline).toBe('Eat good, feel good.');
+  }
+);
+
+test('updated website information remains publicly readable',
+  async () => {
+    const res = await request(app)
+    .get('/api/site-info');
+    expect(res.status).toBe(200);
+    expect(res.body.data.heroHeadingPrimary).toBe('Eat good.');
+    expect(res.body.data.aboutHeading).toBe('Better awareness, one meal at a time.');
+  }
+);
+
   test('non-admin cannot view system analytics', async () => {
   const res = await request(app)
     .get('/api/admin/analytics')
@@ -313,6 +373,36 @@ test(
     expect(res.status).toBe(200);
     expect(res.body.data.rating).toBe(5);
     expect(res.body.data.comment).toBe('Review content updated by administrator.');
+  }
+);
+
+test(
+  'admin can add review content to a shared recipe',
+  async () => {
+    const res =await request(app)
+        .post('/api/admin/reviews')
+        .set('Authorization',`Bearer ${adminToken}`)
+        .send({recipeId:reviewRecipeId,rating: 4,comment:'Administrator review content.', });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.id).toBe(adminId);
+    expect(res.body.data.recipe.id).toBe(reviewRecipeId);
+  }
+);
+
+test(
+  'admin can delete review content',
+  async () => {
+    const res =
+      await request(app).delete(`/api/admin/reviews/${targetReviewId}`
+        )
+        .set('Authorization',`Bearer ${adminToken}`);
+
+    expect(res.status).toBe(204);
+
+    const deleted = await prisma.recipeReview.findUnique({
+      where: {id: targetReviewId,},});
+      expect(deleted).toBeNull();
   }
 );
 

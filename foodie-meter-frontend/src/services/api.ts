@@ -98,6 +98,27 @@ export type FollowingUser = {
   } | null;
 };
 
+export type WebsiteInfo = {
+  id: string;
+  siteName: string;
+  heroHeadingPrimary: string;
+  heroHeadingAccent: string;
+  heroDescription: string;
+  featuresHeading: string;
+  featuresDescription: string;
+  freePlanDescription: string;
+  premiumPlanDescription: string;
+  aboutHeading: string;
+  aboutDescription: string;
+  medicalDisclaimer: string;
+  ctaHeading: string;
+  ctaDescription: string;
+  footerTagline: string;
+  footerCopyright: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AdminUser = {
   id: string;
   name: string;
@@ -182,6 +203,29 @@ export type RecipeReviewData = {
   count: number;
 };
 
+export type AdminReview = {
+  id: string;
+  userId: string;
+  recipeId: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+
+  recipe: {
+    id: string;
+    title: string;
+    isShared: boolean;
+    moderationStatus?: 'ACTIVE' | 'FLAGGED' | 'REMOVED';
+  };
+};
+
 let accessToken: string | null = null;
 export const setAccessToken = (token: string | null) => { accessToken = token; };
 
@@ -227,98 +271,41 @@ export const api = {
   unfollowUser: (userId: string) => request<void>(`/gamification/follow/${userId}`, { method: 'DELETE',}),
   updateGamificationSettings: (payload: { leaderboardOptIn?: boolean;shareProgressOptIn?: boolean;}) =>
   request<{ leaderboardOptIn: boolean; shareProgressOptIn: boolean;}>('/gamification/settings', { method: 'PUT', body: JSON.stringify(payload),}),
-  getAdminUsers: (params?: {
-  role?: AdminUser['role'];
-  status?: AdminUser['status'];
-  search?: string;
-}) => {
-  const query = new URLSearchParams();
-
-  if (params?.role) query.set('role', params.role);
-  if (params?.status) query.set('status', params.status);
-  if (params?.search) query.set('search', params.search);
-
-  const suffix = query.toString()
-    ? `?${query.toString()}`
-    : '';
-
-  return request<AdminUser[]>(`/admin/users${suffix}`);
+  getWebsiteInfo: () =>request<WebsiteInfo>('/site-info'),
+  updateWebsiteInfo: (payload: Partial<Omit<WebsiteInfo, | 'id'| 'createdAt'| 'updatedAt'>>) =>
+  request<WebsiteInfo>('/site-info',{method: 'PUT',body: JSON.stringify(payload),}),
+  getAdminUsers: (params?: {role?: AdminUser['role'];status?: AdminUser['status'];search?: string;}) => {const query = new URLSearchParams();
+    if (params?.role) query.set('role', params.role);
+    if (params?.status) query.set('status', params.status);
+    if (params?.search) query.set('search', params.search);
+    const suffix = query.toString()
+      ? `?${query.toString()}`
+      : '';
+    return request<AdminUser[]>(`/admin/users${suffix}`);
 },
 
-updateAdminUserStatus: (
-  id: string,
-  status: AdminUser['status']
-) =>
-  request<AdminUser>(`/admin/users/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
-  }),
-
-updateAdminUserRole: (
-  id: string,
-  role: AdminUser['role']
-) =>
-  request<AdminUser>(`/admin/users/${id}/role`, {
-    method: 'PATCH',
-    body: JSON.stringify({ role }),
-  }),
-
-getNutritionistApplications: (
-  status?: NutritionistApplication['status']
-) =>
-  request<NutritionistApplication[]>(
-    `/nutritionist-applications${
-      status ? `?status=${status}` : ''
-    }`
-  ),
-
+updateAdminUserStatus: (id: string,status: AdminUser['status']) =>
+  request<AdminUser>(`/admin/users/${id}/status`, {method: 'PATCH',body: JSON.stringify({ status }),}),
+updateAdminUserRole: (id: string,role: AdminUser['role']) =>request<AdminUser>(`/admin/users/${id}/role`, {method: 'PATCH',body: JSON.stringify({ role }),}),
+getNutritionistApplications: (status?: NutritionistApplication['status']) =>
+  request<NutritionistApplication[]>(`/nutritionist-applications${status ? `?status=${status}` : ''}`),
 approveNutritionistApplication: (id: string) =>
-  request(`/nutritionist-applications/${id}/approve`, {
-    method: 'POST',
-  }),
-
-rejectNutritionistApplication: (
-  id: string,
-  notes: string
-) =>
-  request(`/nutritionist-applications/${id}/reject`, {
-    method: 'POST',
-    body: JSON.stringify({ notes }),
-  }),
-
-  sendAdminPasswordReset: (id: string) =>
-  request<void>(
-    `/admin/users/${id}/password-reset`,
-    {
-      method: 'POST',
-    }
-  ),
-
+  request(`/nutritionist-applications/${id}/approve`, {method: 'POST',}),
+rejectNutritionistApplication: (id: string,notes: string) =>
+  request(`/nutritionist-applications/${id}/reject`, {method: 'POST',body: JSON.stringify({ notes }),}),
+sendAdminPasswordReset: (id: string) =>
+  request<void>(`/admin/users/${id}/password-reset`,{method: 'POST',}),
 deleteAdminUser: (id: string) =>
-  request<void>(
-    `/admin/users/${id}`,
-    {
-      method: 'DELETE',
-    }
-  ),
-
-  getMyRecipes: () =>
-  request<BackendRecipe[]>('/recipes'),
-
-getPublicRecipes: () =>
-  request<PublicRecipe[]>('/recipes/public'),
-
+  request<void>(`/admin/users/${id}`,{method: 'DELETE',}),
+getMyRecipes: () => request<BackendRecipe[]>('/recipes'),
+getPublicRecipes: () => request<PublicRecipe[]>('/recipes/public'),
 createRecipe: (payload: {
   title: string;
   ingredients: string;
   instructions: string;
   isShared: boolean;
 }) =>
-  request<BackendRecipe>('/recipes', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  }),
-
+  request<BackendRecipe>('/recipes', {method: 'POST',body: JSON.stringify(payload),}),
 updateRecipe: (
   id: string,
   payload: {
@@ -326,25 +313,13 @@ updateRecipe: (
     ingredients?: string;
     instructions?: string;
     isShared?: boolean;
-  }
-) =>
-  request<BackendRecipe>(
-    `/recipes/${id}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    }
-  ),
+  }) =>
+  request<BackendRecipe>(`/recipes/${id}`,{method: 'PUT',body: JSON.stringify(payload),}),
 
 deleteRecipe: (id: string) =>
-  request<void>(`/recipes/${id}`, {
-    method: 'DELETE',
-  }),
-
+  request<void>(`/recipes/${id}`, {method: 'DELETE',}),
   getRecipeReviews: (recipeId: string) =>
-  request<RecipeReviewData>(
-    `/recipe-reviews/${recipeId}`
-  ),
+  request<RecipeReviewData>(`/recipe-reviews/${recipeId}`),
 
 saveMyRecipeReview: (
   recipeId: string,
@@ -352,7 +327,7 @@ saveMyRecipeReview: (
   comment: string
 ) =>
   request<BackendRecipeReview>(
-    `/recipe-reviews/${recipeId}/me`,
+`/recipe-reviews/${recipeId}/me`,
     {
       method: 'PUT',
       body: JSON.stringify({
@@ -369,4 +344,39 @@ deleteMyRecipeReview: (recipeId: string) =>
       method: 'DELETE',
     }
   ),
+
+  getAdminReviews: (
+  search?: string
+) => {
+  const suffix =
+    search?.trim()
+      ? `?search=${encodeURIComponent(
+          search.trim()
+        )}`
+      : '';
+
+  return request<AdminReview[]>(
+    `/admin/reviews${suffix}`
+  );
+},
+
+createAdminReview: (
+  recipeId: string,
+  rating: number,
+  comment: string
+) =>
+  request<AdminReview>(
+    '/admin/reviews',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        recipeId,
+        rating,
+        comment,
+      }),
+    }
+  ),
+
+updateAdminReview: (id: string,payload: {rating?: number;comment?: string;}) =>request<AdminReview>(`/admin/reviews/${id}`,{method: 'PATCH',body: JSON.stringify(payload),}),
+deleteAdminReview: (id: string) => request<void>(`/admin/reviews/${id}`,{method: 'DELETE',}),
 };

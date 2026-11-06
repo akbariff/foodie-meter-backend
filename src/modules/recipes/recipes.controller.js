@@ -126,6 +126,7 @@ async function listPublic(req, res) {
       createdAt: recipe.createdAt,
       ownerId: recipe.user.id,
       ownerName: recipe.user.name,
+      isShared: recipe.isShared,
     }))
   );
 }

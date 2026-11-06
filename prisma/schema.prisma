@@ -499,3 +499,35 @@ model UserFollow {
   @@index([followingId])
   @@map("user_follows")
 }
+
+model WebsiteInfo {
+  id String @id
+
+  siteName String @default("FoodieMeter")
+
+  heroHeadingPrimary String @default("Eat good.")
+  heroHeadingAccent  String @default("Feel good.")
+  heroDescription    String @default("Build healthier eating habits with calorie tracking, a simple food diary, smarter meal suggestions and recipes that fit your goals.")
+
+  featuresHeading     String @default("Healthy eating without the guesswork")
+  featuresDescription String @default("FoodieMeter brings the core tools you need into one mobile experience—from tracking what you eat to finding meals that make sense for your goals.")
+
+  freePlanDescription    String @default("For building your daily tracking habit.")
+  premiumPlanDescription String @default("For deeper personalization and progress insights.")
+
+  aboutHeading     String @default("Better awareness, one meal at a time.")
+  aboutDescription String @default("FoodieMeter is an Android-oriented dietary and nutrition recommendation application designed to help users set calorie goals, record meals, manage recipes, discover curated content and monitor dietary progress.")
+
+  medicalDisclaimer String @default("FoodieMeter provides general dietary guidance and is not a replacement for professional medical advice.")
+
+  ctaHeading     String @default("Your healthier routine starts with one meal.")
+  ctaDescription String @default("Create a free prototype account and explore the FoodieMeter experience.")
+
+  footerTagline   String @default("Eat good, feel good.")
+  footerCopyright String @default("© 2026 FoodieMeter. Prototype landing page.")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("website_info")
+}

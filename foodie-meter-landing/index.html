@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="FoodieMeter helps you track calories, keep a food diary, discover recipes and get meal recommendations that fit your goals." />
+  <meta name="theme-color" content="#0f5132" />
+  <title>FoodieMeter — Eat good, feel good</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <div class="container nav-shell">
+      <span id="site-name-header">FoodieMeter</span>
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img"><path d="M24 4C14.6 4 7 11.6 7 21c0 11.9 11.8 20 17 23 5.2-3 17-11.1 17-23C41 11.6 33.4 4 24 4Z" fill="currentColor"/><path d="M16.5 22.2c4.8-1.1 8.5-4.5 10.9-9.8 3.6 2 5.8 5.7 5.8 9.7 0 6.1-4.8 11.2-10.8 11.7-2.5-2.2-4.7-5.7-5.9-11.6Z" fill="#f7f3e8"/><path d="M16.2 17.5c3.7.6 7.1-.4 10.2-3" stroke="#0f5132" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+        </span>
+        <span id="site-name-header">FoodieMeter</span>
+      </a>
+
+      <nav class="desktop-nav" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#plans">Plans</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#about">About</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="text-link" href="register.html">Log in</a>
+        <a class="btn btn-small btn-primary" href="register.html">Register free</a>
+      </div>
+
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobile-menu" hidden>
+      <a href="#features">Features</a>
+      <a href="#plans">Plans</a>
+      <a href="#reviews">Reviews</a>
+      <a href="#about">About</a>
+      <a href="register.html">Log in</a>
+      <a class="btn btn-primary" href="register.html">Register free</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero section-pad">
+      <div class="hero-glow hero-glow-one"></div>
+      <div class="hero-glow hero-glow-two"></div>
+      <div class="container hero-grid">
+        <div class="hero-copy reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span>Your everyday nutrition companion</span>
+          <h1>Eat good.<br><span>Feel good.</span></h1>
+          <p class="hero-text" id="hero-description">
+            Build healthier eating habits with calorie tracking, a simple food diary, smarter meal suggestions and recipes that fit your goals.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-large" href="register.html">Create free account <span aria-hidden="true">→</span></a>
+            <a class="btn btn-secondary btn-large" href="#features">Explore features</a>
+          </div>
+          <div class="mini-proof" aria-label="Demo rating preview">
+            <div class="avatar-stack" aria-hidden="true">
+              <span>AT</span><span>NL</span><span>DK</span>
+            </div>
+            <div>
+              <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p>Designed for everyday users in Singapore & Malaysia</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal" aria-label="FoodieMeter mobile app preview">
+          <div class="hero-orbit orbit-a"></div>
+          <div class="hero-orbit orbit-b"></div>
+          <div class="food-card card-left">
+            <span class="food-emoji" aria-hidden="true">🥗</span>
+            <div><strong>Lunch logged</strong><small>Chicken grain bowl · 520 kcal</small></div>
+            <span class="check">✓</span>
+          </div>
+          <div class="food-card card-right">
+            <span class="food-emoji" aria-hidden="true">🍲</span>
+            <div><strong>Recommended</strong><small>High-protein dinner · 610 kcal</small></div>
+          </div>
+
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="app-topbar">
+                <div>
+                  <small>Good afternoon</small>
+                  <strong>Alex 👋</strong>
+                </div>
+                <span class="avatar">A</span>
+              </div>
+
+              <div class="goal-card">
+                <div class="goal-head"><span>Daily calorie goal</span><strong>1,480 / 2,000</strong></div>
+                <div class="progress-track"><span style="width:74%"></span></div>
+                <div class="goal-meta"><span><b>520</b> kcal left</span><span>74% complete</span></div>
+              </div>
+
+              <div class="quick-title"><strong>Today</strong><a href="#features">View diary</a></div>
+              <div class="meal-row">
+                <span class="meal-icon">☕</span>
+                <div><strong>Breakfast</strong><small>Oats & berries</small></div>
+                <b>340</b>
+              </div>
+              <div class="meal-row">
+                <span class="meal-icon">🥙</span>
+                <div><strong>Lunch</strong><small>Chicken grain bowl</small></div>
+                <b>520</b>
+              </div>
+              <div class="meal-row">
+                <span class="meal-icon">🍜</span>
+                <div><strong>Dinner</strong><small>Not logged yet</small></div>
+                <b>—</b>
+              </div>
+
+              <div class="recommend-card">
+                <div>
+                  <span class="tiny-pill">For you</span>
+                  <strong>What should I eat next?</strong>
+                  <small>See meals that fit your remaining calories.</small>
+                </div>
+                <span aria-hidden="true">→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="proof-strip" aria-label="FoodieMeter highlights">
+      <div class="container proof-grid">
+        <div><strong>Simple</strong><span>Everyday calorie tracking</span></div>
+        <div><strong>Personal</strong><span>Goal-based recommendations</span></div>
+        <div><strong>Useful</strong><span>Recipes & food diary</span></div>
+        <div><strong>Flexible</strong><span>Free and Premium tiers</span></div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="features">
+      <div class="container">
+        <div class="section-heading reveal">
+          <span class="eyebrow">Built around your daily routine</span>
+          <h2 id="features-heading">Healthy eating without the guesswork</h2>
+          <p id="features-description">
+            FoodieMeter brings the core tools you need into one mobile experience—from tracking what you eat to finding meals that make sense for your goals.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card feature-green reveal">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.5A8.7 8.7 0 0 1 20.5 9H15V3.5Z"/></svg>
+            </div>
+            <span class="feature-kicker">01 · Track</span>
+            <h3>Calorie goals & meal logging</h3>
+            <p>Set a daily calorie target, record meals and see how every entry moves you toward your goal.</p>
+            <div class="feature-visual mini-chart">
+              <div class="chart-row"><span>Mon</span><i style="height:44%"></i></div>
+              <div class="chart-row"><span>Tue</span><i style="height:66%"></i></div>
+              <div class="chart-row"><span>Wed</span><i style="height:55%"></i></div>
+              <div class="chart-row"><span>Thu</span><i style="height:81%"></i></div>
+              <div class="chart-row"><span>Fri</span><i style="height:71%"></i></div>
+            </div>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M7 7h10M7 11h10M7 15h6"/></svg>
+            </div>
+            <span class="feature-kicker">02 · Reflect</span>
+            <h3>Your food diary, all in one place</h3>
+            <p>Review meals and daily calorie totals in a clear timeline so you can understand your eating patterns.</p>
+            <div class="feature-visual diary-preview">
+              <div><span>Breakfast</span><b>340 kcal</b></div>
+              <div><span>Lunch</span><b>520 kcal</b></div>
+              <div><span>Snack</span><b>180 kcal</b></div>
+            </div>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/><circle cx="7" cy="7" r="3"/></svg>
+            </div>
+            <span class="feature-kicker">03 · Discover</span>
+            <h3>Meal recommendations that fit</h3>
+            <p>Get meal suggestions based on your calorie target, with more personalized recommendations available in Premium.</p>
+            <div class="feature-visual recommendation-preview">
+              <span>✨ Suggested for you</span>
+              <strong>Salmon soba bowl</strong>
+              <small>590 kcal · balanced dinner</small>
+            </div>
+          </article>
+
+          <article class="feature-card feature-dark reveal">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16v13H4z"/><path d="M8 6V4h8v2M8 10h8M8 14h5"/></svg>
+            </div>
+            <span class="feature-kicker">04 · Create</span>
+            <h3>Recipes you can save, build & share</h3>
+            <p>Manage your own recipes and browse curated nutritionist content when you want fresh ideas.</p>
+            <div class="recipe-chips">
+              <span>High protein</span><span>Quick meals</span><span>Balanced</span><span>Local favourites</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="premium-section section-pad">
+      <div class="container premium-grid">
+        <div class="premium-copy reveal">
+          <span class="eyebrow light">FoodieMeter Premium</span>
+          <h2>Go further when you’re ready.</h2>
+          <p>Unlock richer recommendations and progress tools designed to make your nutrition journey more personal and motivating.</p>
+          <div class="premium-list">
+            <div><span>✦</span><p><strong>Personalized recommendations</strong><small>Suggestions using your profile, calorie target and dietary tags.</small></p></div>
+            <div><span>↗</span><p><strong>Progress analytics</strong><small>Monthly reports, trends and predictive nudges to help you stay on track.</small></p></div>
+            <div><span>🏅</span><p><strong>Gamification & social</strong><small>Streaks, badges, challenges, leaderboards and sharing options.</small></p></div>
+            <div><span>📷</span><p><strong>Image-assisted meal logging</strong><small>A future scope feature for estimating food and calories from a meal photo.</small></p></div>
+          </div>
+        </div>
+        <div class="premium-visual reveal">
+          <div class="report-card">
+            <div class="report-top"><span>Monthly progress</span><span class="positive">+8% consistency</span></div>
+            <div class="report-score"><strong>24</strong><span>day streak</span></div>
+            <svg class="line-chart" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0 135 C45 125 62 95 102 103 S156 118 190 78 S242 84 274 55 S330 66 400 20" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+              <path d="M0 135 C45 125 62 95 102 103 S156 118 190 78 S242 84 274 55 S330 66 400 20 L400 160 L0 160 Z" fill="currentColor" opacity=".08"/>
+            </svg>
+            <div class="report-footer"><span>Week 1</span><span>Week 2</span><span>Week 3</span><span>Week 4</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad plans-section" id="plans">
+      <div class="container">
+        <div class="section-heading reveal">
+          <span class="eyebrow">Plans</span>
+          <h2>Start free. Upgrade when you want more.</h2>
+          <p>Pricing is kept as a UI placeholder for now and can be connected to your final subscription model later.</p>
+        </div>
+        <div class="plan-grid">
+          <article class="plan-card reveal">
+            <div class="plan-top"><span class="plan-label">Free</span>
+              <h3>S$0</h3> <p id="free-plan-description">For building your daily tracking habit.</p></div>            
+              <ul>
+              <li>Daily calorie goal</li>
+              <li>Meal & calorie logging</li>
+              <li>Basic meal recommendations</li>
+              <li>Food diary</li>
+              <li>Personal recipes</li>
+            </ul>
+            <a class="btn btn-secondary full" href="register.html">Create free account</a>
+          </article>
+          <article class="plan-card plan-featured reveal">
+            <div class="popular-badge">Most complete</div>
+            <div class="plan-top"><span class="plan-label">Premium</span>
+              <h3>Coming soon</h3>
+              <p id="premium-plan-description">For deeper personalization and progress insights.</p></div>            <ul>
+              <li>Everything in Free</li>
+              <li>Personalized meal recommendations</li>
+              <li>Curated recipe details</li>
+              <li>Daily & monthly reporting</li>
+              <li>Progress analytics, streaks & social tools</li>
+            </ul>
+            <a class="btn btn-primary full" href="register.html">Join FoodieMeter</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad reviews-section" id="reviews">
+      <div class="container">
+        <div class="section-heading reveal">
+          <span class="eyebrow">Community preview</span>
+          <h2>Loved by foodies across the region</h2>
+          <p>Sample testimonials for the prototype UI. Replace these with verified reviews before public launch.</p>
+        </div>
+
+        <div class="review-grid">
+          <article class="review-card reveal">
+            <div class="review-head"><div class="review-person"><span class="review-avatar">AT</span><div><strong>Amelia T.</strong><small>Singapore 🇸🇬</small></div></div><span class="review-mark">“</span></div>
+            <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p>“The diary view makes it much easier to see where my calories are going. I like that the recommendations feel simple instead of overwhelming.”</p>
+          </article>
+          <article class="review-card reveal">
+            <div class="review-head"><div class="review-person"><span class="review-avatar">NL</span><div><strong>Nur L.</strong><small>Kuala Lumpur, Malaysia 🇲🇾</small></div></div><span class="review-mark">“</span></div>
+            <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p>“I can track meals and keep my own recipes in one place. The clean layout makes the app easy to use even when I’m logging food quickly.”</p>
+          </article>
+          <article class="review-card reveal">
+            <div class="review-head"><div class="review-person"><span class="review-avatar">DK</span><div><strong>Daniel K.</strong><small>Johor Bahru, Malaysia 🇲🇾</small></div></div><span class="review-mark">“</span></div>
+            <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p>“The calorie goal and progress view are exactly what I need. I’m looking forward to the personalized meal and monthly progress features.”</p>
+          </article>
+          <article class="review-card reveal">
+            <div class="review-head"><div class="review-person"><span class="review-avatar">MC</span><div><strong>Marcus C.</strong><small>Singapore 🇸🇬</small></div></div><span class="review-mark">“</span></div>
+            <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p>“FoodieMeter feels focused on practical everyday use. It gives me enough information to stay mindful without turning every meal into a spreadsheet.”</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-section section-pad" id="about">
+      <div class="container about-grid">
+        <div class="about-card reveal">
+          <span class="eyebrow">About FoodieMeter</span>
+          <h2 id="about-heading">Better awareness, one meal at a time.</h2>
+          <p id="about-description">FoodieMeter is an Android-oriented dietary and nutrition recommendation application designed to help users set calorie goals, record meals, manage recipes, discover curated content and monitor dietary progress.</p>
+          <p class="medical-note"><strong>Important:</strong>
+            <span id="medical-disclaimer">
+              FoodieMeter provides general dietary guidance and is not a replacement for professional medical advice.</span>
+            </p>
+        </div>
+        <div class="about-quote reveal">
+          <span class="quote-mark">“</span>
+          <p>Understand what you eat.<br>Make smarter choices.<br>Build habits that last.</p>
+          <span>FoodieMeter · FYP-26-S3-35P</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta section-pad">
+      <div class="container cta-card reveal">
+        <div>
+          <span class="eyebrow light">Ready to begin?</span>
+          <h2 id="cta-heading">Your healthier routine starts with one meal.</h2>
+
+<p id="cta-description">
+  Create a free prototype account and explore the FoodieMeter experience.
+</p>
+        </div>
+        <a class="btn btn-light btn-large" href="register.html">Register an account <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true">●</span>
+          <span id="site-name-footer">FoodieMeter</span>
+        <p id="footer-tagline">Eat good, feel good.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#plans">Plans</a>
+        <a href="#reviews">Reviews</a>
+        <a href="register.html">Register</a>
+      </div>
+      <div class="footer-note">
+        <p>FYP-26-S3-35P</p>
+        <p id="footer-copyright">© 2026 FoodieMeter. Prototype landing page.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -111,39 +111,64 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!last) return;
     setHistory(h => h.slice(0, -1)); setRoute(last.screen); setParams(last.params || {});
   };
-  const login = async (email: string, password: string) => {
-    const result = await api.login(email.trim(), password);
-    setAccessToken(result.token);
+  
+  const login = async (email: string,password: string) => {console.log('[LOGIN] 1 - starting');
+  const result =await api.login(email.trim(),password);
+  console.log('[LOGIN] 2 - login API completed');
+  setAccessToken(result.token);
+  try {console.log('[LOGIN] 3 - loading profile');
+    const profile =await api.getProfile();
+    console.log('[LOGIN] 4 - profile loaded',profile.role);
+    setUser({
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      premium:
+        profile.subscriptionTier ===
+        'PREMIUM',
+      dietaryPreference:
+        profile.dietaryPreference,
+      excludedIngredients:
+        profile.excludedIngredients,
+      role: profile.role,
+    });
+
+    if (profile.role === 'ADMIN') {console.log('[LOGIN] 5 - admin detected');
+      setDiary([]);
+      setHasCalorieGoal(false);
+      setHistory([]);
+      console.log('[LOGIN] 6 - opening AdminDashboard');
+      setRoute('AdminDashboard');
+      setParams({});
+      return;
+    }
+
     try {
-      const profile = await api.getProfile();
-      setUser({
-        id: profile.id,
-        name: profile.name,
-        email: profile.email,
-        premium: profile.subscriptionTier === 'PREMIUM',
-        dietaryPreference: profile.dietaryPreference,
-        excludedIngredients: profile.excludedIngredients,
-        role: profile.role
-      });
-      if (profile.role === 'ADMIN') {
-        setDiary([]);
-        setHasCalorieGoal(false);
-        setHistory([]);
-        setRoute('AdminDashboard');
-        setParams({});
-        return;
-      }
-      try { const savedGoal = await api.getGoal(); setGoal(g => ({ ...g, calories: savedGoal.targetCalories })); setHasCalorieGoal(true); }
-      catch { setHasCalorieGoal(false); }
-      const entries = await api.getDiary(new Date().toISOString().slice(0, 10));
-      setDiary(entries.map(fromBackendDiary));
-      const backendRecipes =
-      await api.getMyRecipes();
-      setMyRecipes(backendRecipes.map(fromBackendRecipe));
-      setHistory([]); setRoute('Home'); setParams({});
-    } catch (error) { setAccessToken(null); setUser(null); setDiary([]); throw error; }
-    
-  };
+      const savedGoal = await api.getGoal();
+      setGoal(g => ({
+        ...g,
+        calories:
+          savedGoal.targetCalories,
+      }));
+      setHasCalorieGoal(true);
+    } catch {
+      setHasCalorieGoal(false);
+    }
+    const entries = await api.getDiary(new Date().toISOString().slice(0, 10));
+    setDiary(entries.map(fromBackendDiary));
+    const backendRecipes =await api.getMyRecipes();
+    setMyRecipes(backendRecipes.map(fromBackendRecipe));
+    setHistory([]);
+    setRoute('Home');
+    setParams({});
+  } catch (error) {
+    console.log('[LOGIN] ERROR',error);
+    setAccessToken(null);
+    setUser(null);
+    setDiary([]);
+    throw error;
+  }
+};
   const logout = () => { setAccessToken(null); setUser(null); setDiary([]); setHasCalorieGoal(false); setHistory([]); setRoute('Login'); setParams({}); setMyRecipes([]); };
   const saveGoal = async (nextGoal: Goal) => { await api.saveGoal(nextGoal.calories); setGoal(nextGoal); setHasCalorieGoal(true); };
   const addDiaryEntry = async (entry: Omit<DiaryEntry, 'id' | 'createdAt'>) => {
@@ -161,15 +186,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   ) => {
     const payload = {
       title: recipe.title,
-
-      ingredients:
-        recipe.ingredients.join('\n'),
-
-      instructions:
-        recipe.instructions.join('\n'),
-
-      isShared:
-      recipe.isShared ?? false,
+      ingredients:recipe.ingredients.join('\n'),
+      instructions:recipe.instructions.join('\n'),
+      isShared:recipe.isShared ?? false,
     };
 
     if (recipe.id) {
