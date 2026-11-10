@@ -90,6 +90,51 @@ export type LeaderboardData = {
   entries: LeaderboardEntry[];
 };
 
+export type AnalyticsCalorieDay = {
+  date: string;
+  consumedCalories: number;
+  targetCalories: number | null;
+};
+
+export type AnalyticsWeightLog = {
+  id: string;
+  userId: string;
+  weightKg: number;
+  loggedAt: string;
+  createdAt: string;
+};
+
+export type AnalyticsOverview = {
+  days: number;
+  caloriesTrend: AnalyticsCalorieDay[];
+  averageDailyCalories:
+    | number
+    | null;
+  adherenceRate:
+    | number
+    | null;
+  weightTrend: {
+    entries: AnalyticsWeightLog[];
+    netChangeKg: number;
+    averagePerWeekKg: number;
+  } | null;
+  weightProjection: {
+    currentWeightKg: number;
+    trendKgPerWeek: number;
+    projectedIn4WeeksKg: number;
+  } | null;
+  todayProjection: {
+    consumedSoFar: number;
+    fractionOfDayElapsed: number;
+    projectedEndOfDayCalories: number;
+  } | null;
+  streak: {
+    currentStreak: number;
+    longestStreak: number;
+    lastActiveDate: string | null;
+  } | null;
+};
+
 export type FollowingUser = {
   id: string;
   name: string;
@@ -99,6 +144,21 @@ export type FollowingUser = {
     currentStreak: number;
     longestStreak: number;
   } | null;
+};
+
+export type SubscriptionInfo = {
+  id: string;
+  userId: string;
+  status:| 'ACTIVE' | 'CANCELLED' | 'EXPIRED';
+  startedAt: string;
+  expiresAt: string | null;
+  cancelledAt: string | null;
+  autoRenew: boolean;
+  createdAt: string;
+  updatedAt: string;
+  price: number;
+  nextBillingDate: string | null;
+  cancelScheduled: boolean;
 };
 
 export type WebsiteInfo = {
@@ -303,6 +363,12 @@ export const api = {
   updateAiMeal: (id: string, payload: Partial<AiMeal>) => request<AiMeal>(`/ai-meals/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   approveAiMeal: (id: string) => request<AiMeal>(`/ai-meals/${id}/approve`, { method: 'POST', body: JSON.stringify({ reviewConfirmed: true }) }),
   rejectAiMeal: (id: string, notes: string) => request<AiMeal>(`/ai-meals/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  getAnalyticsOverview: (days: 7 | 30 | 90 = 30) => request<AnalyticsOverview>(`/analytics/overview?days=${days}`),
+  getSubscription: () => request<SubscriptionInfo>('/subscription'),
+  startMockSubscription: () => request<SubscriptionInfo>('/subscription/subscribe',{method: 'POST',}),
+  cancelMockSubscription: () => request<SubscriptionInfo>('/subscription/cancel',{method: 'POST',}),
+  renewMockSubscription: () => request<SubscriptionInfo>('/subscription/renew',{method: 'POST',}),
+  getSubscriptionHistory: () => request<SubscriptionInfo[]>('/subscription/history'),
   getGamificationDashboard: () => request<GamificationDashboard>('/gamification/me'),
   getBadges: () => request<GamificationBadge[]>('/gamification/badges'),
   getChallenges: () => request<GamificationChallenge[]>('/gamification/challenges'),

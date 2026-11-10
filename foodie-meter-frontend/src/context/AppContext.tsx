@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { DiaryEntry, Goal, Recipe, Review, ScreenName } from '../types';
 import { recommendedMeals, starterReviews } from '../data/mock';
-import { api, setAccessToken, DietaryPreference, BackendDiaryEntry, BackendRecipe, MealType } from '../services/api';
+import { api, setAccessToken, DietaryPreference, BackendDiaryEntry, BackendRecipe, MealType, SubscriptionInfo, } from '../services/api';
 
 
 type User = {
@@ -15,13 +15,6 @@ type User = {
   role: 'USER' | 'NUTRITIONIST' | 'ADMIN';
 };
 
-type Subscription = {
-  plan: 'Premium';
-  status: 'active' | 'cancelScheduled';
-  price: number;
-  billingCycle: 'Monthly';
-  nextBillingDate: string;
-};
 
 type AppContextValue = {
   user: User | null;
@@ -49,10 +42,10 @@ type AppContextValue = {
   saveReview: (recipeTitle: string, rating: number, comment: string, id?: string) => void;
   deleteReview: (id: string) => void;
   updateProfile: (patch: Partial<User>) => Promise<void>;
-  upgradePremium: () => void;
-  subscription: Subscription;
-  cancelSubscription: () => void;
-  renewSubscription: () => void;
+  subscription:| SubscriptionInfo| null;
+  subscribePremium:() => Promise<void>;
+  cancelSubscription:() => Promise<void>;
+  renewSubscription:() => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -96,12 +89,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [water, setWater] = useState(2);
   const [myRecipes, setMyRecipes] = useState<Recipe[]>([]);
   const [reviews, setReviews] = useState<Review[]>(starterReviews);
-  const [subscription, setSubscription] = useState<Subscription>(() => {
-    const next = new Date();
-    next.setDate(next.getDate() + 30);
-    return { plan: 'Premium', status: 'active', price: 6.99, billingCycle: 'Monthly', nextBillingDate: next.toISOString() };
-  });
-
+  const [subscription, setSubscription,] = useState<SubscriptionInfo | null > (null);
   const navigate = (screen: ScreenName, nextParams: any = {}) => {
     setHistory(h => [...h, { screen: route, params }]);
     setRoute(screen); setParams(nextParams);
@@ -132,6 +120,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         profile.excludedIngredients,
       role: profile.role,
     });
+    if (
+      profile.subscriptionTier ==='PREMIUM') {
+        try {const currentSubscription = await api.getSubscription();
+          setSubscription( currentSubscription);
+    if ( currentSubscription.status !=='ACTIVE')
+      {
+        setUser(current => current ? {
+          ...current, premium: false,
+        }
+        : current
+      );
+    }
+  } catch {
+    // The admin may have manually assigned Premium without creating a subscription record.
+    setSubscription(null);
+  }
+} else {
+  setSubscription(null);
+}
 
     if (profile.role === 'ADMIN') {console.log('[LOGIN] 5 - admin detected');
       setDiary([]);
@@ -169,7 +176,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     throw error;
   }
 };
-  const logout = () => { setAccessToken(null); setUser(null); setDiary([]); setHasCalorieGoal(false); setHistory([]); setRoute('Login'); setParams({}); setMyRecipes([]); };
+  const logout = () => { setAccessToken(null); setUser(null); setDiary([]); setHasCalorieGoal(false); setHistory([]); setRoute('Login'); setParams({}); setMyRecipes([]); setSubscription(null);};
   const saveGoal = async (nextGoal: Goal) => { await api.saveGoal(nextGoal.calories); setGoal(nextGoal); setHasCalorieGoal(true); };
   const addDiaryEntry = async (entry: Omit<DiaryEntry, 'id' | 'createdAt'>) => {
     const type = entry.mealType.toUpperCase();
@@ -284,13 +291,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const saved = await api.updateProfile({ name: patch.name, dietaryPreference: patch.dietaryPreference, excludedIngredients: patch.excludedIngredients });
     setUser(u => u ? { ...u, name: saved.name, dietaryPreference: saved.dietaryPreference, excludedIngredients: saved.excludedIngredients } : u);
   };
-  const upgradePremium = () => {
-    Alert.alert('Premium demo access', 'Ask the project admin to assign your test account the Premium tier. Billing is not connected yet.');
+  const subscribePremium = async () => {
+    const saved = await api.startMockSubscription();
+    setSubscription(saved);
+    setUser(current => current ? {
+            ...current, premium: true,
+          }
+        : current
+    );
   };
-  const cancelSubscription = () => setSubscription(s => ({ ...s, status:'cancelScheduled' }));
-  const renewSubscription = () => setSubscription(s => ({ ...s, status:'active' }));
+  const cancelSubscription = async () => { 
+    const saved = await api.cancelMockSubscription();
+    setSubscription(saved);
+  };
+  const renewSubscription = async () => {
+    const saved =await api.renewMockSubscription();
+    setSubscription(saved);
+  };
 
-  return <AppContext.Provider value={{ user, route, params, navigate, goBack, login, logout, goal, hasCalorieGoal, setGoal, saveGoal, diary, addDiaryEntry, removeDiaryEntry, consumed, water, setWater, recommendations: recommendedMeals, myRecipes, saveRecipe, deleteRecipe, reviews, saveReview, deleteReview, updateProfile, upgradePremium, subscription, cancelSubscription, renewSubscription }}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={{ user, route, params, navigate, goBack, login, logout, goal, hasCalorieGoal, setGoal, saveGoal, diary, addDiaryEntry, removeDiaryEntry, consumed, water, setWater, recommendations: recommendedMeals, myRecipes, saveRecipe, deleteRecipe, reviews, saveReview, deleteReview, updateProfile, subscribePremium, subscription, cancelSubscription, renewSubscription }}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {
