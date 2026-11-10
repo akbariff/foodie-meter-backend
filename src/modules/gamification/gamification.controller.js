@@ -1,7 +1,7 @@
 const prisma = require('../../config/db');
 const AppError = require('../../middleware/AppError');
 const { ok, created } = require('../../utils/respond');
-const { BADGES } = require('./gamification.service');
+const { BADGES, groupProgress } = require('./gamification.service');
 
 function badgeView(badge) {
   const definition = BADGES[badge.code];
@@ -126,10 +126,23 @@ async function listChallenges(req, res) {
     },
   });
 
+  // For GROUP challenges, add up every member's contribution.
+  const groupIds = challenges.filter(c => c.mode === 'GROUP').map(c => c.id);
+  const groupTotals = groupIds.length
+    ? await prisma.userChallenge.groupBy({
+        by: ['challengeId'],
+        where: { challengeId: { in: groupIds } },
+        _sum: { progress: true },
+        _count: { userId: true },
+      })
+    : [];
+  const totalsById = new Map(groupTotals.map(g => [g.challengeId, g]));
+
   ok(
     res,
     challenges.map(challenge => {
       const membership = challenge.participants[0];
+      const group = totalsById.get(challenge.id);
 
       return {
         id: challenge.id,
@@ -144,6 +157,12 @@ async function listChallenges(req, res) {
         joined: Boolean(membership),
         progress: membership?.progress || 0,
         completedAt: membership?.completedAt || null,
+        ...(challenge.mode === 'GROUP'
+          ? {
+              groupProgress: group?._sum.progress || 0,
+              memberCount: group?._count.userId || 0,
+            }
+          : {}),
       };
     })
   );
@@ -187,6 +206,13 @@ async function joinChallenge(req, res) {
 
   if (existing) {
     return ok(res, existing);
+  }
+
+  if (challenge.mode === 'GROUP') {
+    const total = await groupProgress(challenge.id);
+    if (total >= challenge.targetValue) {
+      throw new AppError(409, 'This group challenge has already been completed');
+    }
   }
 
   const membership = await prisma.userChallenge.create({

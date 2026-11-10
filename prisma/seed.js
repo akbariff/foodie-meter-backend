@@ -99,6 +99,18 @@ async function seedChallenges() {
       isActive: true,
     },
     {
+      title: 'On-Target Week',
+      description:
+        'Finish 5 days within 15% of your daily calorie goal.',
+      type: 'CALORIE_GOAL',
+      mode: 'INDIVIDUAL',
+      targetValue: 5,
+      pointsReward: 120,
+      startDate,
+      endDate,
+      isActive: true,
+    },
+    {
       title: 'Community Meal Drive',
       description:
         'Work together with the community to log 25 meals.',

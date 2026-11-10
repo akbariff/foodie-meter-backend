@@ -94,12 +94,14 @@ async function update(req, res) {
       ...(notes !== undefined ? { notes } : {}),
     },
   });
+  await gamificationService.refreshCalorieGoalChallenges(req.user.id);
   ok(res, entry);
 }
 
 async function remove(req, res) {
   await assertOwnedEntry(req.params.id, req.user.id);
   await prisma.calorieIntake.delete({ where: { id: req.params.id } });
+  await gamificationService.refreshCalorieGoalChallenges(req.user.id);
   res.status(204).send();
 }
 

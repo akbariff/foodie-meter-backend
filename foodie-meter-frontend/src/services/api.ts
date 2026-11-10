@@ -51,6 +51,9 @@ export type GamificationChallenge = {
   joined: boolean;
   progress: number;
   completedAt: string | null;
+  // GROUP challenges only: everyone's contributions added together.
+  groupProgress?: number;
+  memberCount?: number;
 };
 
 export type GamificationDashboard = {

@@ -321,8 +321,12 @@ export function GamificationScreen() {
       )}
 
       {challenges.map(challenge => {
+        const isGroup = challenge.mode === 'GROUP';
+        const shown = isGroup
+          ? challenge.groupProgress ?? 0
+          : challenge.progress;
         const progress = Math.min(
-          challenge.progress / challenge.targetValue,
+          shown / challenge.targetValue,
           1
         );
 
@@ -332,6 +336,13 @@ export function GamificationScreen() {
               <View style={styles.flex}>
                 <Text style={styles.heading}>
                   {challenge.title}
+                </Text>
+
+                <Text style={styles.challengeKind}>
+                  {isGroup ? '👥 Group challenge' : 'Personal challenge'}
+                  {challenge.type === 'CALORIE_GOAL'
+                    ? ' • days within 15% of your calorie goal'
+                    : ''}
                 </Text>
 
                 <Text style={uiStyles.body}>
@@ -356,22 +367,38 @@ export function GamificationScreen() {
             </View>
 
             <Text style={uiStyles.muted}>
-              {challenge.progress} / {challenge.targetValue}
+              {isGroup
+                ? `Group: ${shown} / ${challenge.targetValue} • ${challenge.memberCount ?? 0} ${challenge.memberCount === 1 ? 'member' : 'members'}`
+                : `${challenge.progress} / ${challenge.targetValue}`}
             </Text>
+
+            {isGroup && challenge.joined && (
+              <Text style={uiStyles.muted}>
+                Your contribution: {challenge.progress}
+              </Text>
+            )}
 
             {challenge.completedAt ? (
               <Text style={styles.completed}>
-                ✓ Challenge completed
+                {isGroup
+                  ? '✓ Group challenge completed'
+                  : '✓ Challenge completed'}
               </Text>
             ) : challenge.joined ? (
               <Text style={styles.joined}>
                 Challenge joined
+              </Text>
+            ) : isGroup && shown >= challenge.targetValue ? (
+              <Text style={styles.joined}>
+                This group has already reached its target
               </Text>
             ) : (
               <Button
                 title={
                   actionId === challenge.id
                     ? 'Joining...'
+                    : isGroup
+                    ? 'Join group'
                     : 'Join challenge'
                 }
                 disabled={actionId === challenge.id}
@@ -651,6 +678,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
 
+  challengeKind: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    marginBottom: 4,
+  },
   completed: {
     color: colors.success,
     fontWeight: '800',
