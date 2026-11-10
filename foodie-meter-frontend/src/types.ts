@@ -4,7 +4,7 @@ export type ScreenName =
   | 'LogMeal' | 'Diary' | 'MyRecipes' | 'RecipeEditor'
   | 'Profile' | 'Reviews' | 'Premium' | 'Insights'
   | 'ManageSubscription' | 'AiMealReview'
-  | 'Gamification' | 'AdminDashboard';
+  | 'Gamification' | 'AdminDashboard' | 'Nutritionist';
 
 export type Goal = {
   goalType: 'Lose' | 'Maintain' | 'Gain';

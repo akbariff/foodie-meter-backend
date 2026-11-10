@@ -14,6 +14,7 @@ import { AiMealReviewScreen } from './src/screens/AiMealReviewScreen';
 import { colors } from './src/theme';
 import { GamificationScreen } from './src/screens/GamificationScreen';
 import { AdminDashboardScreen } from './src/screens/AdminScreen';
+import { NutritionistScreen } from './src/screens/NutritionistScreen';
 
 function Router(){
  const { route, user }=useApp();
@@ -37,10 +38,11 @@ function Router(){
     AiMealReview:AiMealReviewScreen,
     Gamification: GamificationScreen, 
     AdminDashboard: AdminDashboardScreen,
+    Nutritionist: NutritionistScreen,
 };
  const Screen=screens[route] || LoginScreen;
  const authRoutes=['Login','Register','VerifyEmail','ForgotPassword'];
- const showNav=!!user && !authRoutes.includes(route) && !['RecipeDetails','RecipeEditor','Goal','Recommendations','Reviews','Insights','MyRecipes','ManageSubscription','AiMealReview','Gamification','AdminDashboard'].includes(route);
+ const showNav=!!user && !authRoutes.includes(route) && !['RecipeDetails','RecipeEditor','Goal','Recommendations','Reviews','Insights','MyRecipes','ManageSubscription','AiMealReview','Gamification','AdminDashboard','Nutritionist'].includes(route);
  return <View style={styles.root}><Screen/>{showNav&&<BottomNav/>}</View>;
 }
 

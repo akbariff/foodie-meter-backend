@@ -40,6 +40,20 @@ await prisma.user.upsert({
 
 console.log(`Created/updated ${account.email}`);
   }
+
+  // Let the demo nutritionist write content in every seeded category.
+  const nutritionist = await prisma.user.findUnique({ where: { email: 'nutritionist@foodiemeter.local' } });
+  const categories = await prisma.nutritionCategory.findMany();
+  for (const category of categories) {
+    await prisma.nutritionistCategory.upsert({
+      where: { nutritionistId_categoryId: { nutritionistId: nutritionist.id, categoryId: category.id } },
+      update: {},
+      create: { nutritionistId: nutritionist.id, categoryId: category.id },
+    });
+  }
+  console.log(categories.length
+    ? `Assigned ${nutritionist.email} to ${categories.length} nutrition categories`
+    : 'No nutrition categories yet: run npm run prisma:seed first, then run this script again');
 }
 
 main().catch(error => { console.error(error.message); process.exitCode = 1; }).finally(() => prisma.$disconnect());

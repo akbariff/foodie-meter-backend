@@ -226,6 +226,45 @@ export type AdminReview = {
   };
 };
 
+export type CuratedRecipe = {
+  id: string;
+  title: string;
+  ingredients: string;
+  instructions: string;
+  createdAt: string;
+};
+export type CuratedRecipeInput = Pick<CuratedRecipe, 'title' | 'ingredients' | 'instructions'>;
+export type NutritionCategory = { id: string; name: string; description: string | null };
+export type NutritionContent = {
+  id: string;
+  categoryId: string;
+  authorId: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ModerationStatus = 'ACTIVE' | 'FLAGGED' | 'REMOVED';
+export type ModerationAction = 'APPROVED' | 'CLEARED' | 'FLAGGED' | 'REMOVED';
+export type ModerationRecipe = {
+  id: string;
+  title: string;
+  ingredients: string;
+  instructions: string;
+  moderationStatus: ModerationStatus;
+  createdAt: string;
+  ownerId: string;
+  ownerName: string;
+};
+export type ModerationEntry = {
+  id: string;
+  recipeId: string;
+  reviewedById: string;
+  action: ModerationAction;
+  reason: string | null;
+  createdAt: string;
+};
+
 let accessToken: string | null = null;
 export const setAccessToken = (token: string | null) => { accessToken = token; };
 
@@ -379,4 +418,18 @@ createAdminReview: (
 
 updateAdminReview: (id: string,payload: {rating?: number;comment?: string;}) =>request<AdminReview>(`/admin/reviews/${id}`,{method: 'PATCH',body: JSON.stringify(payload),}),
 deleteAdminReview: (id: string) => request<void>(`/admin/reviews/${id}`,{method: 'DELETE',}),
+
+  // Nutritionist tools
+  getCuratedRecipes: () => request<CuratedRecipe[]>('/nutritionist-recipes'),
+  createCuratedRecipe: (payload: CuratedRecipeInput) => request<CuratedRecipe>('/nutritionist-recipes', { method: 'POST', body: JSON.stringify(payload) }),
+  updateCuratedRecipe: (id: string, payload: Partial<CuratedRecipeInput>) => request<CuratedRecipe>(`/nutritionist-recipes/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteCuratedRecipe: (id: string) => request<void>(`/nutritionist-recipes/${id}`, { method: 'DELETE' }),
+  getMyNutritionCategories: () => request<NutritionCategory[]>('/nutrition-categories/mine'),
+  getNutritionContents: (categoryId: string) => request<NutritionContent[]>(`/nutrition-contents?categoryId=${categoryId}`),
+  createNutritionContent: (payload: { categoryId: string; title: string; content: string }) => request<NutritionContent>('/nutrition-contents', { method: 'POST', body: JSON.stringify(payload) }),
+  updateNutritionContent: (id: string, payload: { title?: string; content?: string }) => request<NutritionContent>(`/nutrition-contents/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteNutritionContent: (id: string) => request<void>(`/nutrition-contents/${id}`, { method: 'DELETE' }),
+  getModerationQueue: (status?: ModerationStatus) => request<ModerationRecipe[]>(`/recipe-moderation/queue${status ? `?status=${status}` : ''}`),
+  getModerationHistory: (recipeId: string) => request<ModerationEntry[]>(`/recipe-moderation/${recipeId}/history`),
+  moderateRecipe: (recipeId: string, action: ModerationAction, reason?: string) => request<ModerationEntry>(`/recipe-moderation/${recipeId}`, { method: 'POST', body: JSON.stringify({ action, ...(reason ? { reason } : {}) }) }),
 };

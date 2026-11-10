@@ -19,13 +19,16 @@ async function assertRecipeExists(recipeId) {
 
 // Moderators need to see recipes across every user, unlike the owner-scoped
 // lookup in recipes.controller.js, so this queries prisma.recipe directly.
+// Only recipes shared with the community are moderated; private recipes stay
+// visible to their owner alone.
 async function queue(req, res) {
   const { status } = req.query;
   const recipes = await prisma.recipe.findMany({
-    where: { ...(status ? { moderationStatus: status } : {}) },
+    where: { isShared: true, ...(status ? { moderationStatus: status } : {}) },
     orderBy: { createdAt: 'desc' },
+    include: { user: { select: { id: true, name: true } } },
   });
-  ok(res, recipes);
+  ok(res, recipes.map(({ user, ...recipe }) => ({ ...recipe, ownerId: user.id, ownerName: user.name })));
 }
 
 async function history(req, res) {

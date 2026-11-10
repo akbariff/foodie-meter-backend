@@ -22,7 +22,8 @@ export function ProfileScreen(){
    {EXCLUSIONS.map(tag=><Button key={tag} title={`${excluded.includes(tag)?'✓ ':''}${tag.replace('_',' ')}`} secondary onPress={()=>toggle(tag)}/>)}
    <Text style={uiStyles.muted}>Always check ingredients and preparation for food allergies; these filters cannot guarantee safety.</Text>
    <Button title="Save profile" onPress={async()=>{try{await updateProfile({name,dietaryPreference:diet,excludedIngredients:excluded});Alert.alert('Saved','Profile updated.')}catch(error){Alert.alert('Save failed',String((error as Error).message))}}}/>
-   {(user?.role==='NUTRITIONIST'||user?.role==='ADMIN')&&<Button title="Review AI meals" onPress={()=>navigate('AiMealReview')}/>}
+   {(user?.role==='NUTRITIONIST'||user?.role==='ADMIN')&&<Button title="Nutritionist tools" onPress={()=>navigate('Nutritionist')}/>}
+   {(user?.role==='NUTRITIONIST'||user?.role==='ADMIN')&&<Button title="Review AI meals" secondary onPress={()=>navigate('AiMealReview')}/>}
    <Button title="Set calorie goal" secondary onPress={()=>navigate('Goal')}/>
    <Button title="My recipes" secondary onPress={()=>navigate('MyRecipes')}/>
    <Button title="Recipe reviews" secondary onPress={()=>navigate('Reviews')}/>

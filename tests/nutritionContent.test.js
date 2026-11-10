@@ -132,6 +132,30 @@ describe('Nutrition categories', () => {
     expect(list.body.data.map(n => n.id)).toContain(assignedId);
   });
 
+  test('a nutritionist sees only their assigned categories under /mine', async () => {
+    const assigned = await request(app)
+      .get('/api/nutrition-categories/mine')
+      .set('Authorization', `Bearer ${assignedToken}`);
+    expect(assigned.status).toBe(200);
+    expect(assigned.body.data.map(c => c.id)).toContain(categoryId);
+
+    const unassigned = await request(app)
+      .get('/api/nutrition-categories/mine')
+      .set('Authorization', `Bearer ${unassignedToken}`);
+    expect(unassigned.status).toBe(200);
+    expect(unassigned.body.data.map(c => c.id)).not.toContain(categoryId);
+
+    const admin_ = await request(app)
+      .get('/api/nutrition-categories/mine')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(admin_.body.data.map(c => c.id)).toContain(categoryId);
+  });
+
+  test('listing /mine requires login', async () => {
+    const res = await request(app).get('/api/nutrition-categories/mine');
+    expect(res.status).toBe(401);
+  });
+
   test('assigning the same nutritionist twice is a conflict', async () => {
     const res = await request(app)
       .post(`/api/nutrition-categories/${categoryId}/nutritionists/${assignedId}`)

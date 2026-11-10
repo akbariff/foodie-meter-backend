@@ -19,7 +19,7 @@ const recipeIdParam = param('recipeId').isUUID().withMessage('Invalid recipe id'
  * /api/recipe-moderation/queue:
  *   get:
  *     tags: [Recipe Moderation]
- *     summary: List recipes across all users for moderation (nutritionist/admin only)
+ *     summary: List shared community recipes for moderation, with the owner's name (nutritionist/admin only)
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: query

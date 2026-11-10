@@ -102,7 +102,15 @@ async function listNutritionists(req, res) {
   ok(res, assignments.map(a => ({ ...a.nutritionist, assignedAt: a.assignedAt })));
 }
 
+async function listMine(req, res) {
+  const categories = await prisma.nutritionCategory.findMany({
+    where: req.user.role === 'ADMIN' ? {} : { nutritionists: { some: { nutritionistId: req.user.id } } },
+    orderBy: { name: 'asc' },
+  });
+  ok(res, categories);
+}
+
 module.exports = {
   list, getById, create, update, remove,
-  assignNutritionist, unassignNutritionist, listNutritionists,
+  assignNutritionist, unassignNutritionist, listNutritionists, listMine,
 };

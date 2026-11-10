@@ -148,9 +148,28 @@ async function seedChallenges() {
   console.log(`Seeded ${challenges.length} gamification challenges`);
 }
 
+async function seedNutritionCategories() {
+  const categories = [
+    { name: 'Weight Management', description: 'Guidance on calorie balance, portion sizes and steady weight change.' },
+    { name: 'Plant-Based Eating', description: 'Vegetarian and vegan meals, protein sources and balanced plant-based diets.' },
+    { name: 'Healthy Breakfasts', description: 'Quick, balanced ideas to start the day.' },
+  ];
+
+  for (const category of categories) {
+    await prisma.nutritionCategory.upsert({
+      where: { name: category.name },
+      update: { description: category.description },
+      create: category,
+    });
+  }
+
+  console.log(`Seeded ${categories.length} nutrition categories`);
+}
+
 async function main() {
   await seedNutritionistRecipes();
   await seedChallenges();
+  await seedNutritionCategories();
 
   console.log('Database seed completed');
 }

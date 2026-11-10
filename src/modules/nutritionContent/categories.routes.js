@@ -37,6 +37,19 @@ router.get('/', asyncHandler(controller.list));
  *       200: { description: The category }
  *       404: { description: Not found }
  */
+/**
+ * @openapi
+ * /api/nutrition-categories/mine:
+ *   get:
+ *     tags: [Nutrition Categories]
+ *     summary: Categories the signed-in nutritionist may write content in (admins get every category)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Array of categories }
+ *       403: { description: Not a nutritionist or admin }
+ */
+router.get('/mine', requireAuth, requireRole('NUTRITIONIST', 'ADMIN'), asyncHandler(controller.listMine));
+
 router.get('/:id', [idParam], validate, asyncHandler(controller.getById));
 
 /**

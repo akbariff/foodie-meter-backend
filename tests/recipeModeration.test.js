@@ -70,6 +70,7 @@ beforeAll(async () => {
       title: `Moderation Test Recipe ${runId}`,
       ingredients: 'Sugar, flour, butter',
       instructions: 'Mix and bake.',
+      isShared: true, // only shared recipes are moderated
     });
   expect(createRecipe.status).toBe(201);
   recipeId = createRecipe.body.data.id;
@@ -95,7 +96,23 @@ describe('Recipe moderation', () => {
       .set('Authorization', `Bearer ${nutritionistToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.some(r => r.id === recipeId)).toBe(true);
+    const entry = res.body.data.find(r => r.id === recipeId);
+    expect(entry).toBeDefined();
+    expect(entry.ownerName).toBe(owner.name);
+  });
+
+  test('private recipes are not shown in the moderation queue', async () => {
+    const privateRecipe = await request(app)
+      .post('/api/recipes')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ title: `Private Moderation Recipe ${runId}`, ingredients: 'Rice', instructions: 'Cook.' });
+    expect(privateRecipe.status).toBe(201);
+
+    const res = await request(app)
+      .get('/api/recipe-moderation/queue')
+      .set('Authorization', `Bearer ${nutritionistToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.some(r => r.id === privateRecipe.body.data.id)).toBe(false);
   });
 
   test('flagging without a reason is rejected', async () => {
