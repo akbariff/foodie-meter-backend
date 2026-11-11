@@ -104,6 +104,8 @@ export type AnalyticsWeightLog = {
   createdAt: string;
 };
 
+export type WeightLogEntry = AnalyticsWeightLog;
+
 export type AnalyticsOverview = {
   days: number;
   caloriesTrend: AnalyticsCalorieDay[];
@@ -364,6 +366,33 @@ export const api = {
   approveAiMeal: (id: string) => request<AiMeal>(`/ai-meals/${id}/approve`, { method: 'POST', body: JSON.stringify({ reviewConfirmed: true }) }),
   rejectAiMeal: (id: string, notes: string) => request<AiMeal>(`/ai-meals/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) }),
   getAnalyticsOverview: (days: 7 | 30 | 90 = 30) => request<AnalyticsOverview>(`/analytics/overview?days=${days}`),
+  getWeightLogs: () => request<WeightLogEntry[]>('/weight-log'),
+  createWeightLog: (weightKg: number, loggedAt?: string) =>request<WeightLogEntry>('/weight-log',
+    {
+      method: 'POST',
+      body: JSON.stringify({weightKg, ...(loggedAt
+        ? { loggedAt }
+        : {}),
+      }),
+    }
+  ),
+
+updateWeightLog: (id: string, payload: {
+    weightKg?: number;
+    loggedAt?: string;
+  }
+) =>
+  request<WeightLogEntry>(`/weight-log/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }
+  ),
+  deleteWeightLog: (id: string) => request<void>(`/weight-log/${id}`,
+    {
+      method: 'DELETE',
+    }
+  ),
   getSubscription: () => request<SubscriptionInfo>('/subscription'),
   startMockSubscription: () => request<SubscriptionInfo>('/subscription/subscribe',{method: 'POST',}),
   cancelMockSubscription: () => request<SubscriptionInfo>('/subscription/cancel',{method: 'POST',}),

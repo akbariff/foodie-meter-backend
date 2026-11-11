@@ -3,7 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Field, ScreenTitle, uiStyles } from '../components/UI';
 import { useApp } from '../context/AppContext';
 import { colors } from '../theme';
-import { api, AnalyticsOverview, DietaryPreference } from '../services/api';
+import { api, AnalyticsOverview, DietaryPreference, WeightLogEntry, } from '../services/api';
 
 
 const EXCLUSIONS = ['MILK','EGGS','FISH','SHELLFISH','TREE_NUTS','PEANUTS','WHEAT','SOY','SESAME'];
@@ -328,21 +328,72 @@ export function InsightsScreen() {
   const [overview,setOverview,] =useState<AnalyticsOverview | null>(null);
   const [loading,setLoading,] = useState(true);
   const [error,setError,] = useState('');
+  const [weightInput, setWeightInput,] = useState('');
+  const [weightLogs, setWeightLogs,] = useState<WeightLogEntry[]>([]);
+  const [savingWeight, setSavingWeight,] = useState(false);
   const load = async (selectedDays:| 7| 30| 90 = days) => {
     try {
       setLoading(true);
       setError('');
-      const data =await api.getAnalyticsOverview(selectedDays);
-      setOverview(data);
+      const [data, logs,] = await Promise.all([api.getAnalyticsOverview(selectedDays),
+        api.getWeightLogs(),
+      ]);
+
+setOverview(data);
+
+setWeightLogs(
+  [...logs].reverse()
+);
     } catch (err) {
-      setError(
-        String(
-          (err as Error).message || err)
-      );
+      setError(String((err as Error).message || err));
     } finally {
       setLoading(false);
     }
   };
+  const saveWeight = async () => {const weight = Number(weightInput);
+    if (
+      !Number.isFinite(weight) || weight < 20 || weight > 400) {
+        Alert.alert('Invalid weight', 'Enter a weight between 20 kg and 400 kg.');
+      return;
+    }
+    try {
+      setSavingWeight(true);
+      await api.createWeightLog(weight);
+      setWeightInput('');
+      await load(days);
+      Alert.alert( 'Weight logged',`${weight} kg was added to your progress history.`);
+    } catch (err) {
+      Alert.alert('Unable to log weight',
+        String((err as Error).message || err));
+    } finally {
+      setSavingWeight(false);
+    }
+  };
+  const removeWeight =(entry: WeightLogEntry) => {Alert.alert('Delete weight entry?',
+     `${entry.weightKg} kg will be removed from your progress history.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+
+        {
+          text: 'Delete',
+          style: 'destructive',
+
+          onPress: async () => {
+            try {
+              await api.deleteWeightLog(entry.id);
+              await load(days);
+            } catch (err) {
+              Alert.alert('Delete failed', String((err as Error).message || err));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {void load(days);}, [days]);
   const recentDays =overview?.caloriesTrend.filter(item =>item.consumedCalories > 0).slice(-7).reverse() ?? [];
   return (
@@ -364,6 +415,75 @@ export function InsightsScreen() {
           title={days === 90? '✓ Last 90 days': 'Last 90 days'}
           secondary onPress={() =>setDays(90)}/>
       </Card>
+      <Card>
+        <Text style={uiStyles.h2}>
+          Log your weight
+          </Text>
+          <Text style={uiStyles.muted}>
+            Add weight entries over time to
+            calculate your weight trend and
+            4-week projection.
+          </Text>
+          <Field
+            label="Current weight (kg)"
+            value={weightInput}
+            onChangeText={setWeightInput}
+            keyboardType="decimal-pad"
+            placeholder="e.g. 68.5"
+          />
+          <Button
+            title={
+              savingWeight
+                ? 'Saving weight...'
+                : 'Log weight'
+            }
+            disabled={savingWeight}
+            onPress={() =>
+              void saveWeight()
+            }
+          />
+          <View style={uiStyles.divider} />
+          <Text style={uiStyles.h2}>
+            Recent weight entries
+          </Text>
+          {weightLogs.length === 0 ? (
+            <Text style={uiStyles.muted}>
+              No weight entries yet.
+            </Text>
+          ) : (
+            weightLogs
+              .slice(0, 5)
+              .map(entry => (
+                <View
+                  key={entry.id}
+                  style={{marginBottom: 12,}}>
+                  <View
+                    style={uiStyles.spaceBetween}>
+                    <View>
+                      <Text
+                        style={uiStyles.body}>
+                        {entry.weightKg} kg
+                      </Text>
+                      <Text
+                        style={uiStyles.muted}>
+                        {new Date(entry.loggedAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+
+                    <Button
+                      title="Delete"
+                      danger
+                      onPress={() =>
+                        removeWeight(
+                          entry
+                        )
+                      }
+                    />
+                  </View>
+                </View>
+              ))
+          )}
+        </Card>
 
       {loading && (
         <Card>
