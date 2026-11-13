@@ -324,6 +324,8 @@ export function PremiumScreen() {
 }
 
 export function InsightsScreen() {
+  const { user, navigate } = useApp();
+  const isPremium = Boolean(user?.premium);
   const [days, setDays] = useState<7 | 30 | 90>(30);
   const [overview,setOverview,] =useState<AnalyticsOverview | null>(null);
   const [loading,setLoading,] = useState(true);
@@ -343,7 +345,28 @@ export function InsightsScreen() {
       setLoading(false);
     }
   };
-  useEffect(() => {void load(days);}, [days]);
+  useEffect(() => {if (isPremium) void load(days);}, [days, isPremium]);
+
+  // Analytics is Premium-only, so Free users get an upgrade prompt instead of an error.
+  if (!isPremium) {
+    return (
+      <ScrollView style={uiStyles.screen}
+        contentContainerStyle={uiStyles.scrollContent}>
+        <ScreenTitle title="Progress & insights"
+          subtitle="Your nutrition trends and progress projections"
+          back
+        />
+        <Card>
+          <Text style={styles.active}>✦ Premium feature</Text>
+          <Text style={uiStyles.body}>
+            Upgrade to Premium to see your average calorie intake, goal adherence,
+            today&apos;s projection and weight trends.
+          </Text>
+          <Button title="View Premium" onPress={() => navigate('Premium')} />
+        </Card>
+      </ScrollView>
+    );
+  }
   const recentDays =overview?.caloriesTrend.filter(item =>item.consumedCalories > 0).slice(-7).reverse() ?? [];
   return (
     <ScrollView style={uiStyles.screen}
