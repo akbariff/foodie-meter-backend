@@ -86,7 +86,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [goal, setGoal] = useState<Goal>({ goalType: 'Maintain', calories: 2000, protein: 120, carbs: 220, fat: 65, activity: 'Moderately active' });
   const [hasCalorieGoal, setHasCalorieGoal] = useState(false);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
-  const [water, setWater] = useState(2);
+  const [water, setWater] = useState(0);
   const [myRecipes, setMyRecipes] = useState<Recipe[]>([]);
   const [reviews, setReviews] = useState<Review[]>(starterReviews);
   const [subscription, setSubscription,] = useState<SubscriptionInfo | null > (null);
@@ -176,7 +176,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     throw error;
   }
 };
-  const logout = () => { setAccessToken(null); setUser(null); setDiary([]); setHasCalorieGoal(false); setHistory([]); setRoute('Login'); setParams({}); setMyRecipes([]); setSubscription(null);};
+  const logout = () => {setAccessToken(null);setUser(null);setDiary([]);setHasCalorieGoal(false);setHistory([]);setRoute('Login');setParams({});setMyRecipes([]);setSubscription(null);setWater(0);};
   const saveGoal = async (nextGoal: Goal) => { await api.saveGoal(nextGoal.calories); setGoal(nextGoal); setHasCalorieGoal(true); };
   const addDiaryEntry = async (entry: Omit<DiaryEntry, 'id' | 'createdAt'>) => {
     const type = entry.mealType.toUpperCase();

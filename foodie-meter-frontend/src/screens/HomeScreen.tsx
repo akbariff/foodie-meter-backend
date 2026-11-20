@@ -1,11 +1,31 @@
-import React from 'react';
+import React, {useEffect,useState,} from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenTitle, uiStyles } from '../components/UI';
 import { useApp } from '../context/AppContext';
 import { colors } from '../theme';
+import {api,GamificationDashboard,} from '../services/api';
 
 export function HomeScreen() {
   const { user, goal, hasCalorieGoal, consumed, navigate, water, setWater } = useApp();
+  const [gamification, setGamification,] = useState<GamificationDashboard | null>(null);
+  useEffect(() => {
+  if (!user?.premium) {setGamification(null);
+    return;
+  }
+  api.getGamificationDashboard().then(data => {setGamification(data);}).catch(() => {
+      setGamification(null);
+    });
+  }, [user?.id, user?.premium]);
+  const currentStreak =
+  gamification?.userStreak
+    ?.currentStreak ?? 0;
+const badgesThisWeek =gamification?.userBadges.filter(badge => {
+  if (!badge.earnedAt) {return false;}
+  const earnedAt = new Date(badge.earnedAt).getTime();
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      return earnedAt >= sevenDaysAgo;
+    }
+  ).length ?? 0;
   const remaining = Math.max(goal.calories - consumed, 0);
   const progress = Math.min(consumed / goal.calories, 1);
 
@@ -47,13 +67,15 @@ export function HomeScreen() {
       </Card>
 
       <View style={styles.space}>
-        <View>
-          <Text style={styles.section}>Current streak</Text>
-          <Text style={styles.streak}>12 days</Text>
-          <Text style={uiStyles.muted}>2 badges unlocked this week</Text>
-        </View>
-        <Text style={{ fontSize: 30 }}>🔥</Text>
-      </View>
+        <View><Text style={styles.section}>Current streak</Text>
+        <Text style={styles.streak}>{currentStreak}{' '}
+          {currentStreak === 1 ? 'day' : 'days'}</Text>
+          <Text style={uiStyles.muted}> {badgesThisWeek}{' '}{badgesThisWeek === 1 ? 'badge' : 'badges'}{' '}unlocked this week</Text>
+          </View>
+          <Text style={{ fontSize: 30 }}>
+            {currentStreak > 0 ? '🔥' : '○'}
+            </Text>
+            </View>
 
       <Card>
         <Text style={styles.section}>Meal recommendations</Text>
