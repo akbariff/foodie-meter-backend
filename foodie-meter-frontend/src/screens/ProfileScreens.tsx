@@ -352,7 +352,7 @@ setWeightLogs(
       setLoading(false);
     }
   };
-<<<<<<< HEAD
+
   const saveWeight = async () => {const weight = Number(weightInput);
     if (
       !Number.isFinite(weight) || weight < 20 || weight > 400) {
@@ -398,7 +398,7 @@ setWeightLogs(
   };
 
   useEffect(() => {void load(days);}, [days]);
-=======
+
   useEffect(() => {if (isPremium) void load(days);}, [days, isPremium]);
 
   // Analytics is Premium-only, so Free users get an upgrade prompt instead of an error.
@@ -421,7 +421,7 @@ setWeightLogs(
       </ScrollView>
     );
   }
->>>>>>> e88645c1c2e8b061d61f03a6bb092203d72daf45
+
   const recentDays =overview?.caloriesTrend.filter(item =>item.consumedCalories > 0).slice(-7).reverse() ?? [];
   return (
     <ScrollView style={uiStyles.screen}
