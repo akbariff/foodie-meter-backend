@@ -237,6 +237,9 @@ export function ReviewsScreen() {
     );
   };
 
+  const selectedRecipe =
+  recipes.find(recipe => recipe.id === selectedRecipeId) ?? null;
+
   const myReview =
     data?.reviews.find(
       review => review.mine
@@ -320,16 +323,115 @@ export function ReviewsScreen() {
       })}
 
       {selectedRecipeId && (
-        <>
-          <View
-            style={uiStyles.divider}
-          />
+  <>
+    <View
+      style={uiStyles.divider}
+    />
 
-          <Text style={uiStyles.h2}>
-            {myReview
-              ? 'Update your review'
-              : 'Leave a review'}
+    {!!selectedRecipe && (
+      <Card>
+        <Text style={styles.detailTitle}>
+          Recipe details
+        </Text>
+
+        <Text style={styles.recipeTitle}>
+          {selectedRecipe.title}
+        </Text>
+
+        <Text style={uiStyles.muted}>
+          By {selectedRecipe.ownerName}
+        </Text>
+
+        <View style={uiStyles.divider} />
+
+        <Text style={styles.detailHeading}>
+          Nutrition
+        </Text>
+
+        {selectedRecipe.calories != null ? (
+          <>
+            <Text style={styles.calories}>
+              {selectedRecipe.calories} kcal
+            </Text>
+
+            <Text style={uiStyles.body}>
+              Protein:{' '}
+              {selectedRecipe.protein ?? 0}g
+              {'  •  '}
+              Carbs:{' '}
+              {selectedRecipe.carbs ?? 0}g
+              {'  •  '}
+              Fat:{' '}
+              {selectedRecipe.fat ?? 0}g
+            </Text>
+
+            {!!selectedRecipe.serving && (
+              <Text style={uiStyles.muted}>
+                Serving:{' '}
+                {selectedRecipe.serving}
+              </Text>
+            )}
+          </>
+        ) : (
+          <Text style={uiStyles.muted}>
+            Nutrition information was not
+            provided for this community
+            recipe.
           </Text>
+        )}
+
+        <View style={uiStyles.divider} />
+
+        <Text style={styles.detailHeading}>
+          Ingredients
+        </Text>
+
+        {selectedRecipe.ingredients
+          .split(/\n|,/)
+          .map(item => item.trim())
+          .filter(Boolean)
+          .map((item, index) => (
+            <Text
+              key={`${item}-${index}`}
+              style={uiStyles.body}
+            >
+              • {item}
+            </Text>
+          ))}
+
+        <View style={uiStyles.divider} />
+
+        <Text style={styles.detailHeading}>
+          Method
+        </Text>
+
+        {selectedRecipe.instructions
+          .split('\n')
+          .map(item => item.trim())
+          .filter(Boolean)
+          .map((item, index) => (
+            <Text
+              key={`${item}-${index}`}
+              style={[
+                uiStyles.body,
+                styles.methodStep,
+              ]}
+            >
+              {index + 1}. {item}
+            </Text>
+          ))}
+      </Card>
+    )}
+
+    <View
+      style={uiStyles.divider}
+    />
+
+    <Text style={uiStyles.h2}>
+      {myReview
+        ? 'Update your review'
+        : 'Leave a review'}
+    </Text>
 
           <Field
             label="Rating (1–5)"
@@ -522,4 +624,30 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontWeight: '700',
   },
+    detailTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    marginBottom: 8,
+  },
+
+  detailHeading: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 8,
+  },
+
+  calories: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: colors.primaryDark,
+    marginBottom: 6,
+  },
+
+  methodStep: {
+    marginBottom: 8,
+  },
+
+
 });

@@ -234,6 +234,12 @@ export type PublicRecipe = {
   ingredients: string;
   instructions: string;
 
+  serving?: string | null;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+
   isShared: boolean;
 
   moderationStatus:
