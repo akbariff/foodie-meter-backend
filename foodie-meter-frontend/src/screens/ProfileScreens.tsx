@@ -109,8 +109,6 @@ export function ProfileScreen(){
     }
   />
 </Card>
-   {(user?.role==='NUTRITIONIST'||user?.role==='ADMIN')&&<Button title="Nutritionist tools" onPress={()=>navigate('Nutritionist')}/>}
-   {(user?.role==='NUTRITIONIST'||user?.role==='ADMIN')&&<Button title="Review AI meals" secondary onPress={()=>navigate('AiMealReview')}/>}
    <Button title="Set calorie goal" secondary onPress={()=>navigate('Goal')}/>
    <Button title="My recipes" secondary onPress={()=>navigate('MyRecipes')}/>
    <Button title="Recipe reviews" secondary onPress={()=>navigate('Reviews')}/>
@@ -171,6 +169,54 @@ export function PremiumScreen() {
     );
   };
 
+  if (user?.role === 'NUTRITIONIST') {
+  return (
+    <ScrollView
+      style={uiStyles.screen}
+      contentContainerStyle={
+        uiStyles.scrollContent
+      }
+    >
+      <ScreenTitle
+        title="Nutritionist"
+        subtitle="Nutritionist tools and review workspace"
+      />
+
+      <Card>
+        <Text style={styles.active}>
+          Nutritionist account
+        </Text>
+
+        <Text style={uiStyles.body}>
+          Manage curated nutrition
+          content, recipes and moderation
+          tasks.
+        </Text>
+      </Card>
+
+      <Button
+        title="Nutritionist tools"
+        onPress={() =>
+          navigate('Nutritionist')
+        }
+      />
+
+      <Button
+        title="Review AI meals"
+        secondary
+        onPress={() =>
+          navigate('AiMealReview')
+        }
+      />
+
+      <Text style={uiStyles.muted}>
+        Nutritionist tools are available
+        based on your account role and do
+        not require a Premium subscription.
+      </Text>
+    </ScrollView>
+  );
+}
 
   if (user?.premium) {
     return (

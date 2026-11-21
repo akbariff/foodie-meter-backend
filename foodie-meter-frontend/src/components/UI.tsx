@@ -37,8 +37,18 @@ const tabs: { label:string; glyph:string; screen:ScreenName }[] = [
 ];
 
 export function BottomNav() {
-  const { route, navigate } = useApp();
-  return <View style={styles.nav}>{tabs.map(t => {
+  const {route, navigate, user,} = useApp();
+  const visibleTabs = tabs.map(tab => {
+    if (tab.screen === 'Premium' && user?.role === 'NUTRITIONIST') {
+      return {
+          ...tab,
+          label: 'Nutritionist',
+          glyph: '✚',
+        };
+      }
+       return tab;
+    });
+  return <View style={styles.nav}>{visibleTabs.map(t => {
     const active = route === t.screen;
     return <Pressable key={t.label} style={styles.navItem} onPress={() => navigate(t.screen)}>
       <Text style={[styles.navGlyph, active && styles.navActive]}>{t.glyph}</Text>
